@@ -24,12 +24,12 @@ protected:
     TtlMutex mtx;
 
     // Methods
-    uHugeInt _nextVal() const;
+    uHugeInt _nextVal();
 
 public:
 
     // Methods
-    uHugeInt nextVal() const;
+    uHugeInt nextVal();
 
     bool tryLock() const;
 

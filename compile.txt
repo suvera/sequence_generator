@@ -1,0 +1,3 @@
+
+g++ -std=c++11 -I. -I./cmdline -lpthread main.cpp
+
