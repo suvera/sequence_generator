@@ -1,3 +1,14 @@
+/* ---------------------------------------------------------------------------
+** see LICENSE.md
+**
+** SeqConfig.cpp
+**  Configuration goes here
+**
+** Author: rnarmala
+** -------------------------------------------------------------------------*/
+#ifndef _SEQUENCE_CONFIG
+#define _SEQUENCE_CONFIG
+
 #define SEQ_DEFAULT_PORT 5088
 
 #define SEQ_DEFAULT_PID_FILE "/var/run/sequencer.pid"
@@ -56,3 +67,6 @@ struct SeqConfig {
         }
     }
 };
+
+
+#endif

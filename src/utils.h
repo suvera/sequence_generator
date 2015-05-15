@@ -1,3 +1,14 @@
+/* ---------------------------------------------------------------------------
+** see LICENSE.md
+**
+** utils.h
+**  Utility methods
+**
+** Author: rnarmala
+** -------------------------------------------------------------------------*/
+#ifndef _SEQUENCE_UTILS
+#define _SEQUENCE_UTILS
+
 int writeToFile(const string& file, const char* data) {
     FILE *fp = fopen(file.c_str(), "wb");
 
@@ -111,3 +122,60 @@ StringMap parseString(string query) {
 
 	return list;
 }
+
+
+int isAlphaId(const char *word) {
+    if (!isalpha(*word) && *word != '_')
+        return 0;
+    
+    word++;
+    
+    while (*word) {
+        if (!(isalnum(*word) || *word == '_')) {
+            return 0;
+        }
+        
+        word++;
+    }
+    
+    return 1;
+}
+
+int isAlphaNumExtra(const char *word) {
+    while (*word) {
+        if (!(isalnum(*word) || *word == '_')) {
+            return 0;
+        }
+        
+        word++;
+    }
+    
+    return 1;
+}
+
+int isAlphaNum(const char *word) {
+    while (*word) {
+        if (!isalnum(*word)) {
+            return 0;
+        }
+        
+        word++;
+    }
+    
+    return 1;
+}
+
+int isNumber(const char *word) {
+    while (*word) {
+        if (!isdigit(*word)) {
+            return 0;
+        }
+        
+        word++;
+    }
+    
+    return 1;
+}
+
+
+#endif

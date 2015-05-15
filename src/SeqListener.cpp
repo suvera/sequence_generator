@@ -1,3 +1,14 @@
+/* ---------------------------------------------------------------------------
+** see LICENSE.md
+**
+** Sequencer.cpp
+**  Sequencer main class
+**
+** Author: rnarmala
+** -------------------------------------------------------------------------*/
+#ifndef _SEQUENCE_LISTENER
+#define _SEQUENCE_LISTENER
+
 // he backlog argument defines the maximum length to which
 // the queue of pending connections for sockfd may grow.
 // If a connection request arrives when the queue is full,
@@ -115,3 +126,6 @@ public:
     }
 };
 
+
+
+#endif

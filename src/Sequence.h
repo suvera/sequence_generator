@@ -1,17 +1,24 @@
+/* ---------------------------------------------------------------------------
+** see LICENSE.md
+**
+** Sequence.h
+**  Sequence class header
+**
+** Author: rnarmala
+** -------------------------------------------------------------------------*/
 #ifndef _SEQUENCE_HPP
 #define _SEQUENCE_HPP
 
-
-typedef unsigned long long uHugeInt;
+#define SEQUENCE_START_FROM 0
 
 typedef std::mutex Mutex;
 typedef std::timed_mutex TtlMutex;
 
-//in seconds
-#define MUTEX_TTL_MAX 2
-// in milli seconds
-#define MAX_WAIT_TIME 1100
+extern Mutex newSeqMtx;
+Mutex newSeqMtx;
 
+extern Mutex UUIDMtx;
+Mutex UUIDMtx;
 
 // Sequence
 class Sequence {
@@ -19,21 +26,33 @@ protected:
 
     string id;
 
-    uHugeInt value = 0;
+    uHugeInt value = SEQUENCE_START_FROM;
 
-    TtlMutex mtx;
+    Mutex mtx;
 
     // Methods
     uHugeInt _nextVal();
 
 public:
 
+    // Constructors
+    Sequence();
+    
+    Sequence(uHugeInt val);
+    
+    ~Sequence();
+
     // Methods
     uHugeInt nextVal();
 
-    bool tryLock() const;
-
     string getId() const;
+    
+    uHugeInt getVal() const;
+
 };
+
+void addNewSequence(const string &key, uHugeInt val);
+
+void getUUID(char *uuid);
 
 #endif

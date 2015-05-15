@@ -1,43 +1,26 @@
+/* ---------------------------------------------------------------------------
+** see LICENSE.md
+**
+** Sequence.cpp
+**  Sequence implementation
+**
+** Author: rnarmala
+** -------------------------------------------------------------------------*/
 #include <Sequence.h>
-
-/**
- * try to lock for a few seconds
- */
-bool Sequence::tryLock() const {
-    //return mtx.try_lock_until(system_clock::from_time_t(time(NULL) + MUTEX_TTL_MAX));
-    return true;
-}
 
 /**
  * return Next value in this sequence
  * 0 means failed
  */
 uHugeInt Sequence::nextVal() {
-    int sl = 0, slc = 0;
-
-    while (sl < MAX_WAIT_TIME) {
-
-        if (this->tryLock()) {
-
-            return _nextVal();
-
-        } else {
-
-            slc = rand() % 100 + 1;
-            sl += slc;
-            sleep_for(milliseconds(slc));
-        }
-    }
-
-    return 0;
-}
-
-/**
- * return Next value in this sequence
- */
-uHugeInt Sequence::_nextVal() {
+    std::lock_guard<Mutex> lk(mtx);
+    
     ++value;
 
+    return value;
+}
+
+uHugeInt Sequence::getVal() const {
     return value;
 }
 
@@ -45,3 +28,32 @@ uHugeInt Sequence::_nextVal() {
 string Sequence::getId() const {
     return id;
 }
+
+Sequence::Sequence() {
+}
+
+Sequence::Sequence(uHugeInt val) {
+    value = val;
+}
+
+Sequence::~Sequence() {
+}
+
+
+// add a new Sequence
+void addNewSequence(const string &key, uHugeInt val) {
+    std::lock_guard<Mutex> lk(newSeqMtx);
+    
+    counters[key] = new Sequence(val);
+}
+
+// UUIDMtx
+void getUUID(char *uuid) {
+    std::lock_guard<Mutex> lk(UUIDMtx);
+    
+    uuid_t newUUID;
+    uuid_generate(newUUID);
+    
+    uuid_unparse_lower(newUUID, uuid);
+}
+

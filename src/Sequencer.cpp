@@ -1,5 +1,16 @@
+/* ---------------------------------------------------------------------------
+** see LICENSE.md
+**
+** Sequencer.cpp
+**  Sequencer main class
+**
+** Author: rnarmala
+** -------------------------------------------------------------------------*/
+#ifndef _SEQUENCE_SEQUENCER
+#define _SEQUENCE_SEQUENCER
+
 class Sequencer {
-public:
+protected:
     Thread *listenThread;
 
     Thread *logThread;
@@ -7,6 +18,8 @@ public:
     Thread *sentinelThread;
 
     std::atomic<int> isListening;
+    
+public:
 
     // Methods
     Sequencer() {
@@ -51,3 +64,5 @@ public:
         this->threadListener();
     }
 };
+
+#endif

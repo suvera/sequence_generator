@@ -6,6 +6,7 @@
 #include <ctime>
 #include <unordered_map>
 #include <ctime>
+#include <cctype>
 #include <cmdline.h>
 #include <unistd.h>
 #include <errno.h>
@@ -21,6 +22,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <vector>
+#include <uuid/uuid.h>
 #include "easylogging++.h"
 
 typedef el::Level LogLevel;
@@ -48,8 +50,11 @@ typedef unsigned long long uHugeInt;
 typedef unordered_map<string, string> StringMap;
 typedef std::thread Thread;
 
-extern unordered_map<string, atomic<uHugeInt>> counters;
-unordered_map<string, atomic<uHugeInt>> counters;
+#include <Sequence.h>
+extern unordered_map<string, Sequence*> counters;
+unordered_map<string, Sequence*> counters;
+
+#include <Sequence.cpp>
 
 #include <utils.h>
 #include <SeqListener.cpp>
