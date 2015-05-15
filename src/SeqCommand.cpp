@@ -24,9 +24,9 @@
 
 #define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, \"error\": \"Authentication failed.\"}"
 
-#define SUCCESS_JSON_BEGIN "{\"success\": 1, \"data\": ";
+#define SUCCESS_JSON_BEGIN "{\"success\": 1, \"data\": "
 
-#define SUCCESS_JSON_END "}";
+#define SUCCESS_JSON_END "}"
 
 #define _OP_ID "op"
 #define _KEY_ID "key"
@@ -47,6 +47,9 @@ public:
 
     ~SeqCommand() {
     }
+
+    SeqCommand(const SeqCommand&) {
+    }
     
     // send response to client
     int sendResponse(int& descriptor, const char* resp) {
@@ -59,7 +62,7 @@ public:
     }
 
     // running on a Thread
-    void processTask(const char* cmdStr, int& cmdStrLen, int& descriptor) {
+    void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
         StringMap parsed = parseString(string(cmdStr));
         
         if (!parsed.count(_OP_ID)) {
@@ -72,7 +75,10 @@ public:
         if (parsed[_OP_ID] == _CMD_STATUS) {
         
             time_t timer = time(NULL);
-            string resp = string(SUCCESS_JSON_BEGIN + "\"" + ctime(&timer) + "\"" + SUCCESS_JSON_END);
+            string tt (ctime(&timer));
+            tt.erase(std::find_if(tt.rbegin(), tt.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), tt.end());
+            string resp;
+            resp.append(SUCCESS_JSON_BEGIN).append("\"").append(tt).append("\"").append(SUCCESS_JSON_END);
             
             sendResponse(descriptor, resp.c_str());
             close(descriptor);
@@ -97,8 +103,14 @@ public:
                     close(descriptor);
                     return;
                 }
-                
-                string resp = string(SUCCESS_JSON_BEGIN + "\"" + counters[parsed[_KEY_ID]].nextVal() + "\"" + SUCCESS_JSON_END);
+
+                string resp;
+                resp.append(SUCCESS_JSON_BEGIN).append("\"");
+
+                // get next value
+                resp.append(std::to_string(counters[parsed[_KEY_ID]]->nextVal()));
+
+                resp.append("\"").append(SUCCESS_JSON_END);
                 
                 sendResponse(descriptor, resp.c_str());
                 close(descriptor);
@@ -114,7 +126,8 @@ public:
                 uHugeInt val = std::stoll(parsed[_KEY_VAL], &sz, 10);
                 addNewSequence(parsed[_KEY_ID], val);
                 
-                string resp = string(SUCCESS_JSON_BEGIN + "\"" + parsed[_KEY_VAL] + "\"" + SUCCESS_JSON_END);
+                string resp;
+                resp.append(SUCCESS_JSON_BEGIN).append("\"").append(parsed[_KEY_VAL]).append("\"").append(SUCCESS_JSON_END);
                 
                 sendResponse(descriptor, resp.c_str());
                 close(descriptor);
@@ -124,7 +137,8 @@ public:
                 char *uuid;
                 getUUID(uuid);
                 
-                string resp = string(SUCCESS_JSON_BEGIN + "\"" + uuid + "\"" + SUCCESS_JSON_END);
+                string resp;
+                resp.append(SUCCESS_JSON_BEGIN).append("\"").append(uuid).append("\"").append(SUCCESS_JSON_END);
                 
                 sendResponse(descriptor, resp.c_str());
                 close(descriptor);

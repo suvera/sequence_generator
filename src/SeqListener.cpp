@@ -21,9 +21,12 @@
 class SeqListener {
 protected:
     int port;
+
     string host;
+
     int conn;
-    bool listening;
+
+    std::atomic<bool> listening;
 
     // open socket, bind and then listen
     int start() {
@@ -50,14 +53,16 @@ protected:
         int success = bind(conn, (struct sockaddr*)&address, sizeof(address));
 
         if (success != 0) {
-            perror("Socket bind() failed");
+            LOG(ERROR) << "Socket bind() failed";
+            //perror("Socket bind() failed");
             return success;
         }
 
         success = listen(conn, LISTEN_BACKLOG);
 
         if (success != 0) {
-            perror("Socket listen() failed");
+            LOG(ERROR) << "Socket listen() failed";
+            //perror("Socket listen() failed");
             return success;
         }
 
@@ -65,6 +70,10 @@ protected:
     }
 
 public:
+
+    SeqListener() {
+    }
+
     SeqListener(int p) {
         port = p;
     }
@@ -72,12 +81,12 @@ public:
     ~SeqListener() {
     }
 
-    int listenNow() {
-        if (listening) {
-            return 0;
-        }
+    SeqListener(const SeqListener&) {
+    }
 
-        start();
+    // listenThread
+    int listenThread() {
+
         listening = true;
 
         while (1) {
@@ -87,7 +96,8 @@ public:
 
             int descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen);
             if (descriptor < 0) {
-                perror("Connection from client accept() failed");
+                LOG(ERROR) << "Connection from client accept() failed";
+                //perror("Connection from client accept() failed");
                 continue;
             }
 
@@ -95,7 +105,8 @@ public:
             inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
             int clientPort = ntohs(clientAddress.sin_port);
 
-            printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
+            //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
+            LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
 
             // Read Bytes
             char buffer[READ_BYTES];
@@ -109,18 +120,30 @@ public:
         }
     }
 
-    // Process Request
-    int processRequest(const char* request, int requestLen, int& descriptor) {
-        printf("processRequest - %s\n", request);
-
-        // send date time to client
-        time_t timer = time(NULL);
-        if (send(descriptor, ctime(&timer), 30, 0) == -1) {
-            perror("send");
+    // listenNow
+    int listenNow() {
+        if (listening) {
+            return 0;
         }
 
+        start();
+
+        //Thread t(&SeqListener::listenThread, SeqListener());
+        //t.join();
+        listenThread();
+    }
+
+    // Process Request
+    int processRequest(const char* request, int requestLen, int& descriptor) {
+        //printf("processRequest - %s\n", request);
+        LOG(INFO) << "processRequest: " << request;
+
+        Thread t(&SeqCommand::processTask, SeqCommand(), request, requestLen, descriptor);
+
+        t.join();
+
         // close client connection, this is needed
-        close(descriptor);
+        //close(descriptor);
 
         return 1;
     }

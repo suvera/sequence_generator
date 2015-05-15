@@ -30,12 +30,6 @@ typedef el::ConfigurationType LogConfigType;
 
 INITIALIZE_EASYLOGGINGPP
 
-void signalHandler(int signal) {
-    printf("Cought signal %d!\n",signal);
-	while(wait(NULL) > 0);
-}
-
-
 using std::cout;
 using std::endl;
 using std::string;
@@ -47,24 +41,53 @@ using std::chrono::system_clock;
 using namespace std::this_thread;
 
 typedef unsigned long long uHugeInt;
+typedef unsigned long uBigInt;
+
 typedef unordered_map<string, string> StringMap;
 typedef std::thread Thread;
 
-#include <Sequence.h>
+#include "Sequence.h"
 extern unordered_map<string, Sequence*> counters;
 unordered_map<string, Sequence*> counters;
 
-#include <Sequence.cpp>
-
-#include <utils.h>
-#include <SeqListener.cpp>
-
-#include <SeqConfig.cpp>
+#include "Sequence.cpp"
+#include "utils.h"
+#include "SeqCommand.cpp"
+#include "SeqListener.cpp"
+#include "SeqConfig.cpp"
 extern SeqConfig config;
 SeqConfig config;
 
-#include <Sequencer.cpp>
+#include "Sequencer.cpp"
 
+// do something on death
+void signalHandler(int signal) {
+    switch (signal) {
+        case SIGCHLD:
+            std::cerr << "Cought signal SIGCHLD\n";
+            break;
+        case SIGHUP:
+            std::cerr << "Cought signal SIGHUP\n";
+            break;
+        case SIGABRT:
+            std::cerr << "Cought signal SIGABRT\n";
+            break;
+        case SIGINT:
+            std::cerr << "Cought signal SIGINT\n";
+            break;
+        case SIGTERM:
+            std::cerr << "Cought signal SIGTERM\n";
+            break;
+        default:
+            std::cerr << "Cought signal " << signal << "\n";
+            break;
+    }
+
+	wait(NULL);
+	exit(signal);
+}
+
+// main
 int main(const int argc, char *argv[])
 {
     // 1. Read Config
@@ -75,9 +98,7 @@ int main(const int argc, char *argv[])
     cmdLine.set_program_name("sequencer");
 
     cmdLine.add<int>("port", 'p', "port number", false, SEQ_DEFAULT_PORT, cmdline::range(1, 65535));
-    cmdLine.add<string>("data-dir", 'd', "data dir path", false, SEQ_DEFAULT_DATA_DIR);
-    cmdLine.add<string>("log-file", 'l', "Log file path", false, SEQ_DEFAULT_LOG_FILE);
-    cmdLine.add<string>("pid-file", 'i', "pid file path", false, SEQ_DEFAULT_PID_FILE);
+    cmdLine.add<string>("home-dir", 'd', "Seq Home dir path", false, SEQ_DEFAULT_HOME);
     cmdLine.add("daemon", 'D', "daemon mode");
     cmdLine.add("help", 'h', "Display Help");
     cmdLine.add("verbose", 'v', "Be verbose");
@@ -90,9 +111,7 @@ int main(const int argc, char *argv[])
     }
 
     config.port = cmdLine.get<int>("port");
-    config.dataDir = cmdLine.get<string>("data-dir");
-    config.logFile = cmdLine.get<string>("log-file");
-    config.pidFile = cmdLine.get<string>("pid-file");
+    config.setHomeDir(cmdLine.get<string>("home-dir"));
 
     config.validate();
 
@@ -100,7 +119,7 @@ int main(const int argc, char *argv[])
     el::Configurations logConf;
     logConf.setToDefault();
     logConf.setGlobally(LogConfigType::Enabled, config.logEnabled ? string("true") : string("false"));
-    logConf.setGlobally(LogConfigType::Filename, config.logFile);
+    logConf.setGlobally(LogConfigType::Filename, config.getLogFile());
     logConf.setGlobally(LogConfigType::ToStandardOutput, string("false"));
     logConf.setGlobally(LogConfigType::MaxLogFileSize, string("2048"));
     el::Loggers::reconfigureLogger("default", logConf);
@@ -121,11 +140,19 @@ int main(const int argc, char *argv[])
             std::cerr << "fork() failed! Could not daemonize this process\n";
             exit(EXIT_FAILURE);
         }
-
-        // handle signals
-        signal(SIGCHLD, signalHandler);
-        signal(SIGHUP, signalHandler);
     }
+
+    // write PID to file
+    char pid[32];
+    sprintf(pid, "%ld", (long)getpid());
+    writeToFile(config.getPIDFile().c_str(), pid);
+
+    // handle signals
+    signal(SIGCHLD, signalHandler);
+    signal(SIGHUP, signalHandler);
+    //signal(SIGABRT, signalHandler);
+    signal(SIGINT, signalHandler);
+    //signal(SIGTERM, signalHandler);
 
     Sequencer *app = new Sequencer();
     app->start();

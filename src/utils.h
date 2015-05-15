@@ -22,6 +22,11 @@ int writeToFile(const string& file, const char* data) {
 }
 
 
+inline bool fileExists(const std::string& name) {
+    struct stat buffer;
+    return (stat (name.c_str(), &buffer) == 0);
+}
+
 int readFromFile(const string& file, string& data) {
     FILE *fp = fopen(file.c_str(), "rb");
 
@@ -60,6 +65,18 @@ int readFromFile(const string& file, string& data) {
     return 1;
 }
 
+
+uHugeInt toHugeInt(const string& str) {
+  std::string::size_type sz = 0;
+
+  if (!str.empty()) {
+        uHugeInt ll = std::stoll (str, &sz, 10);
+
+        return ll;
+  }
+
+  return 0;
+}
 
 StringMap parseString(string query) {
     StringMap list;
