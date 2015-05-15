@@ -69,7 +69,7 @@ public:
         start();
         listening = true;
 
-        while(1) {
+        while (1) {
             struct sockaddr_in clientAddress;
             socklen_t inAddrLen = sizeof(clientAddress);
             memset(&clientAddress, 0, sizeof(clientAddress));

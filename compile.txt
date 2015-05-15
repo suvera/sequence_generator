@@ -1,5 +1,5 @@
 
-g++ -std=c++11 -I. -I./cmdline -I./easyloggingpp/src -lpthread main.cpp
+g++ -std=c++11 -I./src -I./cmdline -I./easyloggingpp/src -lpthread main.cpp
 
 g++ -std=c++11 -lpthread test.cpp
 
