@@ -22,6 +22,7 @@
 #define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}"
 
 #define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, \"error\": \"Authentication failed.\"}"
+#define INVALID_TOO_MANY_CONNECTIONS_JSON "{\"success\": 0, \"error\": \"Too many connections.\"}"
 
 #define SUCCESS_JSON_BEGIN "{\"success\": 1, \"data\": "
 
@@ -35,6 +36,8 @@
 #define _CMD_GET "get"
 #define _CMD_SET "set"
 #define _CMD_UUID "uuid"
+
+#define READ_BYTES 256
 
 // send response to client
 int sendResponse(int& descriptor, const char* resp) {
@@ -52,7 +55,8 @@ void closeClientConnection(int& descriptor) {
 
 // running on a Thread
 void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
-    StringMap parsed = parseString(string(cmdStr));
+    StringMap parsed;
+    parseString(string(cmdStr), parsed);
 
     if (!parsed.count(_OP_ID)) {
         sendResponse(descriptor, INVALID_CMD_JSON);
@@ -122,7 +126,7 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
             return;
         }
     } else if (parsed[_OP_ID] == _CMD_UUID) {
-            char *uuid;
+            char uuid[50];
             getUUID(uuid);
 
             string resp;
@@ -134,20 +138,83 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
     }
 }
 
+
+
+
 // Sequencer Task
 struct SequencerTask {
-    int state = 0; // 0 = un-assigned, 1 = assigned, 2 = running
+    std::atomic<bool> ready; // 0 = ready, 1 = running
 
     struct sockaddr_in clientAddress;
 
     int descriptor;
 
+    std::atomic<int> taskId;
+
+    SequencerTask() {
+        ready = 0;
+        descriptor = 0;
+    }
+
+    SequencerTask(int id) {
+        ready = 0;
+        descriptor = 0;
+        taskId = id;
+    }
+
+    SequencerTask(const SequencerTask&) {
+    }
+
     // run this task
     void run() {
-        while (1) {
+        if (ready || !descriptor) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            return;
         }
+
+        ready = 1;
+
+        if (config.debug) {
+            char clientIP[50];
+
+            inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
+            int clientPort = ntohs(clientAddress.sin_port);
+
+            //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
+            LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
+        }
+
+        // Read Bytes
+        char buffer[READ_BYTES];
+        ssize_t len;
+
+        while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
+            buffer[len] = 0;
+
+            //printf("processRequest - %s\n", request);
+            LOG(INFO) << "processRequest: " << buffer;
+
+            Thread t(&processTask, buffer, len, descriptor);
+            t.join();
+        }
+
+        // connection closed.
+        descriptor = 0;
+        ready = 0;
     }
 };
+
+typedef vector<Thread> SequencerThreads;
+typedef vector<SequencerTask> SequencerTasks;
+
+SequencerThreads seqThreads;
+SequencerTasks seqTasks;
+
+void runSequencerTask(int i) {
+    while (1) {
+        seqTasks[i].run();
+    }
+}
 
 
 #endif

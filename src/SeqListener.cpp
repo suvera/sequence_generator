@@ -15,7 +15,6 @@
 // the client may receive an error with an indication of ECONNREFUSED
 #define LISTEN_BACKLOG 50
 
-#define READ_BYTES 256
 
 // SeqListener
 class SeqListener {
@@ -89,34 +88,6 @@ public:
     SeqListener(const SeqListener&) {
     }
 
-    // Process Request
-    void processRequest(int descriptor, struct sockaddr_in clientAddress) {
-        char clientIP[50];
-
-        inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
-        int clientPort = ntohs(clientAddress.sin_port);
-
-        //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
-        LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
-
-        // Read Bytes
-        char buffer[READ_BYTES];
-        ssize_t len;
-
-        while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
-            buffer[len] = 0;
-
-            //printf("processRequest - %s\n", request);
-            LOG(INFO) << "processRequest: " << buffer;
-
-            Thread t(&processTask, buffer, len, descriptor);
-            t.join();
-        }
-
-        // close client connection, this is needed
-        //close(descriptor);
-    }
-
     // listenThread
     void listenThread() {
         struct sockaddr_in clientAddress;
@@ -125,12 +96,23 @@ public:
         int descriptor = 0;
 
         while (descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen)) {
-            Thread t(&SeqListener::processRequest, SeqListener(), descriptor, clientAddress);
-            t.join();
-        }
+            int found = -1;
+            for (auto it = seqTasks.cbegin(); it != seqTasks.cend(); ++it ) {
+                if (it->ready == 0) {
+                    found = it - seqTasks.begin();
+                    break;
+                }
+            }
 
-        // TODO: recursive call ?
-        //listenThread();
+            if (found == -1) {
+                LOG(ERROR) << "Too many connections, allowed limit exhausted!";
+                sendResponse(descriptor, INVALID_TOO_MANY_CONNECTIONS_JSON);
+                close(descriptor);
+            } else {
+                seqTasks[found].clientAddress = clientAddress;
+                seqTasks[found].descriptor = descriptor;
+            }
+        }
     }
 
     // listenNow
@@ -143,9 +125,17 @@ public:
 
         listening = true;
 
-        //Thread t(&SeqListener::listenThread, SeqListener());
-        //t.join();
-        listenThread();
+        Thread lt (&SeqListener::listenThread, this);
+
+        for (int i = 0; i < config.threads; ++i) {
+            seqThreads.push_back(Thread(runSequencerTask, i));
+            seqTasks.push_back(SequencerTask(i));
+        }
+
+        lt.join();
+        for (int i = 0; i < config.threads; ++i) {
+            seqThreads[i].join();
+        }
     }
 
 };

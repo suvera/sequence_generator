@@ -43,7 +43,6 @@ using namespace std::this_thread;
 
 typedef unsigned long long uHugeInt;
 typedef unsigned long uBigInt;
-
 typedef unordered_map<string, string> StringMap;
 typedef std::thread Thread;
 

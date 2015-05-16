@@ -92,11 +92,10 @@ void getDirFiles(const char* pattern, vector<string> &fileList) {
 }
 
 // Parse Query String
-StringMap parseString(string query) {
-    StringMap list;
+void parseString(string query, StringMap& list) {
 
     if (!query.length()) {
-        return list;
+        return;
     }
 
 	char *query_string;
@@ -150,8 +149,6 @@ StringMap parseString(string query) {
 
 		phrase = strtok(NULL, "&");
 	}
-
-	return list;
 }
 
 
