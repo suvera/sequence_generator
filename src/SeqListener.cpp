@@ -84,40 +84,47 @@ public:
     SeqListener(const SeqListener&) {
     }
 
-    // listenThread
-    int listenThread() {
+    // Process Request
+    void processRequest(int descriptor, struct sockaddr_in clientAddress) {
+        char clientIP[50];
 
-        listening = true;
+        inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
+        int clientPort = ntohs(clientAddress.sin_port);
 
-        while (1) {
-            struct sockaddr_in clientAddress;
-            socklen_t inAddrLen = sizeof(clientAddress);
-            memset(&clientAddress, 0, sizeof(clientAddress));
+        //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
+        LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
 
-            int descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen);
-            if (descriptor < 0) {
-                LOG(ERROR) << "Connection from client accept() failed";
-                //perror("Connection from client accept() failed");
-                continue;
-            }
+        // Read Bytes
+        char buffer[READ_BYTES];
+        ssize_t len;
 
-            char clientIP[50];
-            inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
-            int clientPort = ntohs(clientAddress.sin_port);
+        while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
+            buffer[len] = 0;
 
-            //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
-            LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
+            //printf("processRequest - %s\n", request);
+            LOG(INFO) << "processRequest: " << buffer;
 
-            // Read Bytes
-            char buffer[READ_BYTES];
-            ssize_t len;
-
-            while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
-                buffer[len] = 0;
-
-                processRequest(buffer, len, descriptor);
-            }
+            Thread t(&SeqCommand::processTask, SeqCommand(), buffer, len, descriptor);
+            t.join();
         }
+
+        // close client connection, this is needed
+        //close(descriptor);
+    }
+
+    // listenThread
+    void listenThread() {
+        struct sockaddr_in clientAddress;
+        socklen_t inAddrLen = sizeof(clientAddress);
+        memset(&clientAddress, 0, sizeof(clientAddress));
+        int descriptor = 0;
+
+        while (descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen)) {
+            Thread t(&SeqListener::processRequest, SeqListener(), descriptor, clientAddress);
+            t.join();
+        }
+
+        //listenThread();
     }
 
     // listenNow
@@ -128,25 +135,11 @@ public:
 
         start();
 
-        //Thread t(&SeqListener::listenThread, SeqListener());
-        //t.join();
+        listening = true;
+
         listenThread();
     }
 
-    // Process Request
-    int processRequest(const char* request, int requestLen, int& descriptor) {
-        //printf("processRequest - %s\n", request);
-        LOG(INFO) << "processRequest: " << request;
-
-        Thread t(&SeqCommand::processTask, SeqCommand(), request, requestLen, descriptor);
-
-        t.join();
-
-        // close client connection, this is needed
-        //close(descriptor);
-
-        return 1;
-    }
 };
 
 

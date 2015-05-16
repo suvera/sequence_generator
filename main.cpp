@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <glob.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -50,14 +51,13 @@ typedef std::thread Thread;
 extern unordered_map<string, Sequence*> counters;
 unordered_map<string, Sequence*> counters;
 
+#include "SeqConfig.cpp"
+extern SeqConfig config;
+SeqConfig config;
 #include "Sequence.cpp"
 #include "utils.h"
 #include "SeqCommand.cpp"
 #include "SeqListener.cpp"
-#include "SeqConfig.cpp"
-extern SeqConfig config;
-SeqConfig config;
-
 #include "Sequencer.cpp"
 
 // do something on death
@@ -100,6 +100,8 @@ int main(const int argc, char *argv[])
     cmdLine.add<int>("port", 'p', "port number", false, SEQ_DEFAULT_PORT, cmdline::range(1, 65535));
     cmdLine.add<string>("home-dir", 'd', "Seq Home dir path", false, SEQ_DEFAULT_HOME);
     cmdLine.add("daemon", 'D', "daemon mode");
+    cmdLine.add("disable-logging", 'x', "Disable logging");
+    cmdLine.add("debug", 'g', "Debug Logging");
     cmdLine.add("help", 'h', "Display Help");
     cmdLine.add("verbose", 'v', "Be verbose");
 
@@ -112,6 +114,8 @@ int main(const int argc, char *argv[])
 
     config.port = cmdLine.get<int>("port");
     config.setHomeDir(cmdLine.get<string>("home-dir"));
+    config.logEnabled = !cmdLine.exist("disable-logging");
+    config.debug = cmdLine.exist("debug");
 
     config.validate();
 
@@ -122,6 +126,12 @@ int main(const int argc, char *argv[])
     logConf.setGlobally(LogConfigType::Filename, config.getLogFile());
     logConf.setGlobally(LogConfigType::ToStandardOutput, string("false"));
     logConf.setGlobally(LogConfigType::MaxLogFileSize, string("2048"));
+    if (config.logEnabled && !config.debug) {
+        logConf.set(LogLevel::Info, LogConfigType::Enabled, "false");
+        logConf.set(LogLevel::Trace, LogConfigType::Enabled, "false");
+        logConf.set(LogLevel::Debug, LogConfigType::Enabled, "false");
+        logConf.set(LogLevel::Verbose, LogConfigType::Enabled, "false");
+    }
     el::Loggers::reconfigureLogger("default", logConf);
     // Config Logging - END
 

@@ -11,6 +11,8 @@
 
 #define SEQ_DEFAULT_PORT 5088
 
+#define SEQ_DEFAULT_THREADS 10
+
 #define SEQ_DEFAULT_HOME "/var/lib/sequencer"
 
 // Config
@@ -22,9 +24,13 @@ struct SeqConfig {
 
     bool logEnabled = true;
 
+    bool debug = false;
+
     LogLevel logLevel = LogLevel::Info;
 
     string seqHome = SEQ_DEFAULT_HOME;
+
+    int threads = SEQ_DEFAULT_THREADS;
 
     // methods
     void setHomeDir(string dir) {

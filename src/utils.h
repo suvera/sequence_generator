@@ -78,6 +78,20 @@ uHugeInt toHugeInt(const string& str) {
   return 0;
 }
 
+// Scan directory and get files
+void getDirFiles(const char* pattern, vector<string> &fileList) {
+    glob_t globbuf;
+
+    glob(pattern, GLOB_TILDE, NULL, &globbuf);
+
+    for (int i = 0; i < globbuf.gl_pathc; ++i)
+        fileList.push_back( globbuf.gl_pathv[i] );
+
+    if (globbuf.gl_pathc > 0)
+        globfree(&globbuf);
+}
+
+// Parse Query String
 StringMap parseString(string query) {
     StringMap list;
 
@@ -144,17 +158,17 @@ StringMap parseString(string query) {
 int isAlphaId(const char *word) {
     if (!isalpha(*word) && *word != '_')
         return 0;
-    
+
     word++;
-    
+
     while (*word) {
         if (!(isalnum(*word) || *word == '_')) {
             return 0;
         }
-        
+
         word++;
     }
-    
+
     return 1;
 }
 
@@ -163,10 +177,10 @@ int isAlphaNumExtra(const char *word) {
         if (!(isalnum(*word) || *word == '_')) {
             return 0;
         }
-        
+
         word++;
     }
-    
+
     return 1;
 }
 
@@ -175,10 +189,10 @@ int isAlphaNum(const char *word) {
         if (!isalnum(*word)) {
             return 0;
         }
-        
+
         word++;
     }
-    
+
     return 1;
 }
 
@@ -187,10 +201,10 @@ int isNumber(const char *word) {
         if (!isdigit(*word)) {
             return 0;
         }
-        
+
         word++;
     }
-    
+
     return 1;
 }
 

@@ -53,12 +53,16 @@ public:
     
     // send response to client
     int sendResponse(int& descriptor, const char* resp) {
-        if (send(descriptor, resp, strlen(resp), 0) == -1) {
+        if (send(descriptor, resp, strlen(resp), MSG_NOSIGNAL | MSG_DONTWAIT | MSG_EOR ) == -1) {
             LOG(ERROR) << "Could not send Response " << stderr << ", Response: " << resp;
             return 0;
         }
         
         return 1;
+    }
+
+    void closeClientConnection(int& descriptor) {
+        //close(descriptor);
     }
 
     // running on a Thread
@@ -67,11 +71,10 @@ public:
         
         if (!parsed.count(_OP_ID)) {
             sendResponse(descriptor, INVALID_CMD_JSON);
-            close(descriptor);
+            closeClientConnection(descriptor);
             return;
         }
-        
-        
+
         if (parsed[_OP_ID] == _CMD_STATUS) {
         
             time_t timer = time(NULL);
@@ -81,26 +84,26 @@ public:
             resp.append(SUCCESS_JSON_BEGIN).append("\"").append(tt).append("\"").append(SUCCESS_JSON_END);
             
             sendResponse(descriptor, resp.c_str());
-            close(descriptor);
+            closeClientConnection(descriptor);
             return;
             
         } else if (parsed[_OP_ID] == _CMD_GET || parsed[_OP_ID] == _CMD_SET) {
             if (!parsed.count(_KEY_ID)) {
                 sendResponse(descriptor, INVALID_CMD_KEY_EMPTY_JSON);
-                close(descriptor);
+                closeClientConnection(descriptor);
                 return;
             }
             
             if (!isAlphaId(parsed[_KEY_ID].c_str()) || parsed[_KEY_ID].length() == 0 || parsed[_KEY_ID].length() > MAX_KEY_LENGTH) {
                 sendResponse(descriptor, INVALID_CMD_KEY_JSON);
-                close(descriptor);
+                closeClientConnection(descriptor);
                 return;
             }
             
             if (parsed[_OP_ID] == _CMD_GET) {
                 if (!counters.count(parsed[_KEY_ID])) {
                     sendResponse(descriptor, INVALID_CMD_NO_KEY_JSON);
-                    close(descriptor);
+                    closeClientConnection(descriptor);
                     return;
                 }
 
@@ -113,12 +116,12 @@ public:
                 resp.append("\"").append(SUCCESS_JSON_END);
                 
                 sendResponse(descriptor, resp.c_str());
-                close(descriptor);
+                closeClientConnection(descriptor);
                 return;
             } else if (parsed[_OP_ID] == _CMD_SET) {
                 if (!parsed.count(_KEY_VAL) || !isNumber(parsed[_KEY_VAL].c_str())) {
                     sendResponse(descriptor, INVALID_CMD_KEY_VAL_INVALID_JSON);
-                    close(descriptor);
+                    closeClientConnection(descriptor);
                     return;
                 }
                 
@@ -130,7 +133,7 @@ public:
                 resp.append(SUCCESS_JSON_BEGIN).append("\"").append(parsed[_KEY_VAL]).append("\"").append(SUCCESS_JSON_END);
                 
                 sendResponse(descriptor, resp.c_str());
-                close(descriptor);
+                closeClientConnection(descriptor);
                 return;
             }
         } else if (parsed[_OP_ID] == _CMD_UUID) {
@@ -141,7 +144,7 @@ public:
                 resp.append(SUCCESS_JSON_BEGIN).append("\"").append(uuid).append("\"").append(SUCCESS_JSON_END);
                 
                 sendResponse(descriptor, resp.c_str());
-                close(descriptor);
+                closeClientConnection(descriptor);
                 return;
         }
     }
