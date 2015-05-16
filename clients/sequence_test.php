@@ -20,11 +20,11 @@ for ($i = 0; $i < $limit; $i++) {
 }
 echo "Sequence Time: " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
 
-
+/*
 $time = microtime(true);
 for ($i = 0; $i < $limit; $i++) {
     $seq = $obj->getUUID();
     //echo 'getUUID: ' . $seq . "\n";
 }
 echo "UUID Time: " .number_format(round(microtime(true) - $time, 8), 8) . "\n";
-
+*/

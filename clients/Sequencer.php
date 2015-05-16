@@ -93,7 +93,10 @@ class Sequencer {
      */
     public function nextSequence($key) {
         $in = 'op=get&key=' . $key;
-        socket_write($this->_conn, $in, strlen($in));
+
+        if (socket_write($this->_conn, $in, strlen($in)) === false) {
+            throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
+        }
 
         while ($out = socket_read($this->_conn, 2048)) {
             $resp = json_decode($out, true);
@@ -118,7 +121,10 @@ class Sequencer {
      */
     public function setSequence($key, $value = 0) {
         $in = 'op=set&key=' . $key . '&value=' . $value;
-        socket_write($this->_conn, $in, strlen($in));
+
+        if (socket_write($this->_conn, $in, strlen($in)) === false) {
+            throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
+        }
 
         while ($out = socket_read($this->_conn, 2048)) {
             $resp = json_decode($out, true);
@@ -154,7 +160,10 @@ class Sequencer {
      */
     public function getUUID() {
         $in = 'op=uuid';
-        socket_write($this->_conn, $in, strlen($in));
+
+        if (socket_write($this->_conn, $in, strlen($in)) === false) {
+            throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
+        }
 
         while ($out = socket_read($this->_conn, 2048)) {
             $resp = json_decode($out, true);

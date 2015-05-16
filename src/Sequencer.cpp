@@ -125,11 +125,13 @@ public:
                 threadListener();
             }
 
+            /*
             if (isSaving == 1) {
                 isSaving = 0;
                 delete savingThread;
                 threadSaving();
             }
+            */
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
@@ -184,12 +186,12 @@ public:
 
         this->threadSentinel();
 
-        this->threadSaving();
+        //this->threadSaving();
 
         // somehow this should be started at last
         this->threadListener();
 
-        savingThread->join();
+        //savingThread->join();
         listenThread->join();
         sentinelThread->join();
     }

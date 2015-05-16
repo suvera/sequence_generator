@@ -30,7 +30,10 @@ protected:
 
     // open socket, bind and then listen
     int start() {
-        conn = socket(PF_INET, SOCK_STREAM, 0);
+        conn = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+        // non-blocking mode
+        //fcntl(conn, F_SETFL, O_NONBLOCK);
 
         struct sockaddr_in address;
         memset(&address, 0, sizeof(address));
@@ -55,6 +58,7 @@ protected:
         if (success != 0) {
             LOG(ERROR) << "Socket bind() failed";
             //perror("Socket bind() failed");
+            close(conn);
             return success;
         }
 
@@ -63,6 +67,7 @@ protected:
         if (success != 0) {
             LOG(ERROR) << "Socket listen() failed";
             //perror("Socket listen() failed");
+            close(conn);
             return success;
         }
 
@@ -104,7 +109,7 @@ public:
             //printf("processRequest - %s\n", request);
             LOG(INFO) << "processRequest: " << buffer;
 
-            Thread t(&SeqCommand::processTask, SeqCommand(), buffer, len, descriptor);
+            Thread t(&processTask, buffer, len, descriptor);
             t.join();
         }
 
@@ -124,6 +129,7 @@ public:
             t.join();
         }
 
+        // TODO: recursive call ?
         //listenThread();
     }
 
@@ -137,6 +143,8 @@ public:
 
         listening = true;
 
+        //Thread t(&SeqListener::listenThread, SeqListener());
+        //t.join();
         listenThread();
     }
 
