@@ -6,11 +6,20 @@
  */
 require_once(__DIR__ . '/Sequencer.php');
 
-$key = 'key_' . mt_rand(1, 99999);
+$key = 'key_' . mt_rand(1, 10);
+
+echo "Using key '$key' ...\n";
 $time = microtime(true);
 $obj = new Sequencer('127.0.0.1');
-echo 'setSequence: ' . $obj->setSequence($key, 100) . "\n";
 echo "Sequence Connection: " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
+
+$time = microtime(true);
+try {
+    echo 'createSequence: ' . $obj->createSequence($key, 100) . "\n";
+} catch(Exception $ex) {
+    echo "$key " . $ex->getMessage() . "\n";
+}
+echo "Sequence Create: " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
 
 $limit = 100000;
 

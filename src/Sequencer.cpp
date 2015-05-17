@@ -21,7 +21,7 @@ void saveToDatabase() {
     for (auto it = counters.begin(); it != counters.end(); it++) {
         s.append(it->first);
         s.append(":");
-        s.append(std::to_string(it->second->getVal()));
+        s.append(std::to_string(it->second->value));
         s.append("\n");
     }
 
@@ -125,13 +125,11 @@ public:
                 threadListener();
             }
 
-            /*
             if (isSaving == 1) {
                 isSaving = 0;
                 delete savingThread;
                 threadSaving();
             }
-            */
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
@@ -166,19 +164,16 @@ public:
     void threadSaving() {
         LOG(INFO) << "threadSaving starting ... ";
         savingThread = new Thread(&Sequencer::saveToDiskTask, Sequencer());
-        //savingThread->join();
     }
 
     void threadListener() {
         LOG(INFO) << "threadListener starting ... ";
         listenThread = new Thread(&Sequencer::listenerTask, Sequencer());
-        //listenThread->join();
     }
 
     void threadSentinel() {
         LOG(INFO) << "threadSentinel starting ... ";
         sentinelThread = new Thread(&Sequencer::sentinelTask, Sequencer());
-        //sentinelThread->join();
     }
 
     void start() {
@@ -186,12 +181,12 @@ public:
 
         this->threadSentinel();
 
-        //this->threadSaving();
+        this->threadSaving();
 
         // somehow this should be started at last
         this->threadListener();
 
-        //savingThread->join();
+        savingThread->detach();
         listenThread->join();
         sentinelThread->join();
     }

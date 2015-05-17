@@ -12,7 +12,7 @@
 int writeToFile(const string& file, const char* data) {
     FILE *fp = fopen(file.c_str(), "wb");
 
-    fwrite(data, sizeof(char), sizeof(data), fp);
+    fwrite(data, sizeof(char), strlen(data), fp);
     if (fp == NULL) {
         return 0;
     }
