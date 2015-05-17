@@ -87,13 +87,29 @@ class Sequencer {
     /**
      * get next Sequence
      *
+     *   - NULL means no sequence exists
+     *
      * @param string $key
-     * @return string|int|null
+     * @return string|null
      * @throws SequencerException
      */
     public function nextSequence($key) {
         $in = 'op=get&key=' . $key;
 
+        $resp = $this->_call($in);
+        
+        return ($resp === false) ? NULL : $resp['data'];
+    }
+    
+    
+    /**
+     * call the API
+     *
+     * @param string $in - Command input
+     * @return bool
+     * @throws SequencerException
+     */
+    private function _call($in) {
         if (socket_write($this->_conn, $in, strlen($in)) === false) {
             throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
         }
@@ -102,13 +118,13 @@ class Sequencer {
             $resp = json_decode($out, true);
 
             if ($resp['success']) {
-                return $resp['data'];
+                return $resp;
             }
 
-            throw new SequencerException("nextSequence() failed. Reason: " . $resp['error'] . "");
+            throw new SequencerException("_call() API failed. Reason: " . $resp['error'] . "");
         }
 
-        return NULL;
+        return false;
     }
 
     /**
@@ -122,21 +138,25 @@ class Sequencer {
     public function setSequence($key, $value = 0) {
         $in = 'op=set&key=' . $key . '&value=' . $value;
 
-        if (socket_write($this->_conn, $in, strlen($in)) === false) {
-            throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
-        }
+        $resp = $this->_call($in);
+        
+        return (bool) $resp;
+    }
+    
+    /**
+     * create new Sequence
+     *
+     * @param string $key
+     * @param int $value
+     * @return bool
+     * @throws SequencerException
+     */
+    public function createSequence($key, $value = 0) {
+        $in = 'op=create&key=' . $key . '&value=' . $value;
 
-        while ($out = socket_read($this->_conn, 2048)) {
-            $resp = json_decode($out, true);
-
-            if ($resp['success']) {
-                return true;
-            }
-
-            throw new SequencerException("setSequence() failed. Reason: " . $resp['error'] . "");
-        }
-
-        return false;
+        $resp = $this->_call($in);
+        
+        return (bool) $resp;
     }
 
     /**
@@ -160,22 +180,10 @@ class Sequencer {
      */
     public function getUUID() {
         $in = 'op=uuid';
-
-        if (socket_write($this->_conn, $in, strlen($in)) === false) {
-            throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
-        }
-
-        while ($out = socket_read($this->_conn, 2048)) {
-            $resp = json_decode($out, true);
-
-            if ($resp['success']) {
-                return $resp['data'];
-            }
-
-            throw new SequencerException("getUUID() failed. Reason: " . $resp['error'] . "");
-        }
-
-        return NULL;
+        
+        $resp = $this->_call($in);
+        
+        return ($resp === false) ? NULL : $resp['data'];
     }
 }
 

@@ -150,6 +150,109 @@ void parseString(const char *queryStr, StringMap& list) {
     }
 }
 
+// trim from start
+static inline std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
+
+// trim from end
+static inline std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+// trim from both ends
+static inline std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
+}
+
+// Parse INI file into Map
+int parseIniFile(const char *file, StringMap& list) {
+    if (!strlen(file)) {
+        return 0;
+    }
+    
+    string fileData;
+    if (!readFromFile(file, fileData)) {
+        return -1;
+    }
+
+    string vName;
+    string value;
+    int gotEqual = 0, inString = 0, inComment = 0, lastC = 0, c = 0, ch = 0, len = fileData.length();
+    bool add = false;
+    char buf[3];
+
+    while (c < len) {
+        ch = fileData[c++];
+        
+        if (ch == '\n') {
+            vName = trim(vName);
+            value = trim(value);
+            
+            //cout << "Got: " << vName << "=" << value << "\n";
+            
+            if (vName.length() && value.length()) {
+                list[vName] = value;
+            }
+            
+            vName.clear();
+            value.clear();
+            
+            inString = 0;
+            gotEqual = 0;
+            inComment = 0;
+        } else if (ch == '#' && !inString) {
+            inComment = 1;
+        } else {
+            
+            if (inComment) {
+                continue;
+            }
+            
+            if (gotEqual) {
+                add = true;
+                if (inString) {
+                    if (lastC != '\\' && ch == '"') {
+                        // end string
+                        inString = 0;
+                        add = false;
+                    }
+                } else {
+                    if (value.length() == 0 && lastC != '\\' && ch == '"') {
+                        inString = 1;
+                        add = false;
+                    }
+                }
+                
+                if (ch == ' ' && value.length() == 0) {
+                    // skip white space
+                    add = false;
+                }
+                
+                if (add) value.append(1, ch);
+            } else {
+                if (ch == '=') {
+                    gotEqual = 1;
+                } else {
+                    vName.append(1, ch);
+                }
+            }
+        }
+        
+        lastC = ch;
+    }
+    
+    vName = trim(vName);
+    value = trim(value);
+    if (vName.length() && value.length()) {    
+        list[vName] = value;
+    }
+    
+    return 1;
+}
+
 
 int isAlphaId(const char *word) {
     if (!isalpha(*word) && *word != '_')
@@ -202,6 +305,16 @@ int isNumber(const char *word) {
     }
 
     return 1;
+}
+
+int toInt(const string& str) {
+    std::string::size_type sz;
+    
+    return std::stoi(str, &sz);
+}
+
+bool toBool(const string& str) {
+    return (str == "true" || str == "1" || str == "on" || str == "On" || str == "ON");
 }
 
 

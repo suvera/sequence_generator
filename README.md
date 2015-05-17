@@ -18,8 +18,18 @@ This is designed for Linux platform only, other platforms may not work!
   - *git clone --recursive https://github.com/suvera/sequence_generator.git*
   - *cd sequence_generator*
   - *git submodule update --init --recursive*
-2. make
-3. make install
+
+2. Default installation. 
+  - *make install*
+
+3. Install with custom configuration. Please check "sequencer.ini" for example configuration.
+  - make config=/path/to/ini/seq.ini install
+
+3. Install into specific folder
+  - make prefix=/path/to/custom install
+
+4. Install into specific folder with custom configuration
+  - make prefix=/path/to/custom config=/path/to/ini/seq.ini install
 
 
 **Start the sequencer daemon**
