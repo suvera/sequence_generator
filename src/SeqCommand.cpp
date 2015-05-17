@@ -56,7 +56,8 @@ void closeClientConnection(int& descriptor) {
 // running on a Thread
 void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
     StringMap parsed;
-    parseString(string(cmdStr), parsed);
+    parsed.reserve(100);
+    parseString(cmdStr, parsed);
 
     if (!parsed.count(_OP_ID)) {
         sendResponse(descriptor, INVALID_CMD_JSON);
@@ -143,37 +144,14 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
 
 // Sequencer Task
 struct SequencerTask {
-    std::atomic<bool> ready; // 0 = ready, 1 = running
-
-    struct sockaddr_in clientAddress;
-
-    int descriptor;
-
-    std::atomic<int> taskId;
-
     SequencerTask() {
-        ready = 0;
-        descriptor = 0;
-    }
-
-    SequencerTask(int id) {
-        ready = 0;
-        descriptor = 0;
-        taskId = id;
     }
 
     SequencerTask(const SequencerTask&) {
     }
 
     // run this task
-    void run() {
-        if (ready || !descriptor) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            return;
-        }
-
-        ready = 1;
-
+    void run(int descriptor, struct sockaddr_in clientAddress) {
         if (config.debug) {
             char clientIP[50];
 
@@ -199,22 +177,9 @@ struct SequencerTask {
         }
 
         // connection closed.
-        descriptor = 0;
-        ready = 0;
+        runningClients--;
     }
 };
-
-typedef vector<Thread> SequencerThreads;
-typedef vector<SequencerTask> SequencerTasks;
-
-SequencerThreads seqThreads;
-SequencerTasks seqTasks;
-
-void runSequencerTask(int i) {
-    while (1) {
-        seqTasks[i].run();
-    }
-}
 
 
 #endif

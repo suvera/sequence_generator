@@ -32,4 +32,8 @@ test.cpp
 test.php
 sequencer
 builds
+server
+server.*
+client
+client.*
 

@@ -96,22 +96,18 @@ public:
         int descriptor = 0;
 
         while (descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen)) {
-            int found = -1;
-            for (auto it = seqTasks.cbegin(); it != seqTasks.cend(); ++it ) {
-                if (it->ready == 0) {
-                    found = it - seqTasks.begin();
-                    break;
-                }
-            }
-
-            if (found == -1) {
+            
+            if (runningClients > config.maxConnections) {
                 LOG(ERROR) << "Too many connections, allowed limit exhausted!";
                 sendResponse(descriptor, INVALID_TOO_MANY_CONNECTIONS_JSON);
                 close(descriptor);
-            } else {
-                seqTasks[found].clientAddress = clientAddress;
-                seqTasks[found].descriptor = descriptor;
+                continue;
             }
+            
+            runningClients++;
+            
+            Thread t(&SequencerTask::run, SequencerTask(), descriptor, clientAddress);
+            t.detach();
         }
     }
 
@@ -126,16 +122,7 @@ public:
         listening = true;
 
         Thread lt (&SeqListener::listenThread, this);
-
-        for (int i = 0; i < config.threads; ++i) {
-            seqThreads.push_back(Thread(runSequencerTask, i));
-            seqTasks.push_back(SequencerTask(i));
-        }
-
         lt.join();
-        for (int i = 0; i < config.threads; ++i) {
-            seqThreads[i].join();
-        }
     }
 
 };

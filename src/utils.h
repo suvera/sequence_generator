@@ -92,63 +92,62 @@ void getDirFiles(const char* pattern, vector<string> &fileList) {
 }
 
 // Parse Query String
-void parseString(string query, StringMap& list) {
-
-    if (!query.length()) {
+void parseString(const char *queryStr, StringMap& list) {
+    if (!strlen(queryStr)) {
         return;
     }
 
-	char *query_string;
-	char *phrase;
+    string vName;
+    string value;
+    int flag = 1;
+    int c;
+    char buf[3];
 
-	query_string = (char *) query.c_str();
-
-	phrase = strtok(query_string, "&");
-	while (phrase) {
-        string vName;
-        string value;
-        int flag = 1;
-        int c;
-        char buf[3];
-
-        while (*phrase) {
-            if (flag) {
-                if (*phrase == '=') {
-                    flag = 0;
-                } else {
-                    vName.append(1, *phrase);
-                }
-
+    while (*queryStr) {
+        if (*queryStr == '&') {
+            if (vName.length()) {
+                list[vName] = value;
+            }
+            
+            vName.clear();
+            value.clear();
+            
+            flag = 1;
+            
+        } else if (flag) {
+            if (*queryStr == '=') {
+                flag = 0;
             } else {
-                switch (*phrase) {
-                    case '%':
-                        buf[0] = *(++phrase);
-                        buf[1] = *(++phrase);
-                        buf[2] = '\0';
-
-                        sscanf(buf, "%2x", &c);
-                        value.append(buf);
-                        break;
-
-                    case '+':
-                        value.append(1, ' ');
-                        break;
-
-                    default:
-                        value.append(1, *phrase);
-                        break;
-                }
+                vName.append(1, *queryStr);
             }
 
-            phrase++;
+        } else {
+            switch (*queryStr) {
+                case '%':
+                    buf[0] = *(++queryStr);
+                    buf[1] = *(++queryStr);
+                    buf[2] = '\0';
+
+                    sscanf(buf, "%2x", &c);
+                    value.append(buf);
+                    break;
+
+                case '+':
+                    value.append(1, ' ');
+                    break;
+
+                default:
+                    value.append(1, *queryStr);
+                    break;
+            }
         }
 
-        if (vName.length()) {
-            list[vName] = value;
-        }
-
-		phrase = strtok(NULL, "&");
-	}
+        queryStr++;
+    }
+    
+    if (vName.length()) {
+        list[vName] = value;
+    }
 }
 
 
