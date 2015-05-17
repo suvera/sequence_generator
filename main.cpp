@@ -24,6 +24,7 @@
 #include <signal.h>
 #include <vector>
 #include <uuid/uuid.h>
+#define ELPP_DEFAULT_LOG_FILE "/tmp/sequencer-init.log"
 #include "easylogging++.h"
 
 typedef el::Level LogLevel;
@@ -45,6 +46,8 @@ typedef unsigned long long uHugeInt;
 typedef unsigned long uBigInt;
 typedef unordered_map<string, string> StringMap;
 typedef std::thread Thread;
+extern std::atomic<int> runningClients;
+std::atomic<int> runningClients;
 
 #include "Sequence.h"
 extern unordered_map<string, Sequence*> counters;
@@ -89,7 +92,10 @@ void signalHandler(int signal) {
 // main
 int main(const int argc, char *argv[])
 {
-    // 1. Read Config
+    //0. Initialize Global Variables
+    runningClients = 0;
+
+    // 1. Read Configuration
     srand(time(NULL));
 
     // create a parser
@@ -146,7 +152,7 @@ int main(const int argc, char *argv[])
             exit(EXIT_SUCCESS);
         } else {
             // fork failed
-            std::cerr << "fork() failed! Could not daemonize this process\n";
+            std::cerr << "fork() failed! Could not daemon-ize this process\n";
             exit(EXIT_FAILURE);
         }
     }

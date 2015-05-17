@@ -11,7 +11,7 @@
 
 #define SEQ_DEFAULT_PORT 5088
 
-#define SEQ_DEFAULT_THREADS 10
+#define SEQ_DEFAULT_MAX_CONNECTIONS 1000
 
 #define SEQ_DEFAULT_HOME "/var/lib/sequencer"
 
@@ -30,7 +30,7 @@ struct SeqConfig {
 
     string seqHome = SEQ_DEFAULT_HOME;
 
-    int threads = SEQ_DEFAULT_THREADS;
+    int maxConnections = SEQ_DEFAULT_MAX_CONNECTIONS;
 
     // methods
     void setHomeDir(string dir) {

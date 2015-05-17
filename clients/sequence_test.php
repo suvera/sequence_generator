@@ -6,16 +6,17 @@
  */
 require_once(__DIR__ . '/Sequencer.php');
 
+$key = 'key_' . mt_rand(1, 99999);
 $time = microtime(true);
 $obj = new Sequencer('127.0.0.1');
-echo 'setSequence: ' . $obj->setSequence('rama', 100) . "\n";
+echo 'setSequence: ' . $obj->setSequence($key, 100) . "\n";
 echo "Sequence Connection: " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
 
 $limit = 100000;
 
 $time = microtime(true);
 for ($i = 0; $i < $limit; $i++) {
-    $seq = $obj->nextSequence('rama');
+    $seq = $obj->nextSequence($key);
     //echo 'nextSequence: ' . $seq . "\n";
 }
 echo "Sequence Time: " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
