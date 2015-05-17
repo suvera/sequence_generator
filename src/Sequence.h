@@ -20,35 +20,30 @@ Mutex newSeqMtx;
 extern Mutex UUIDMtx;
 Mutex UUIDMtx;
 
+typedef std::atomic<uHugeInt> uHugeIntAtomic;
+
 // Sequence
 class Sequence {
 protected:
 
     string id;
 
-    uHugeInt value = SEQUENCE_START_FROM;
-
-    Mutex mtx;
-
     // Methods
-    uHugeInt _nextVal();
+    uHugeIntAtomic _nextVal();
 
 public:
-
+    uHugeIntAtomic value;
+        
     // Constructors
     Sequence();
     
     Sequence(uHugeInt val);
+    Sequence(const Sequence&);
     
     ~Sequence();
 
     // Methods
-    uHugeInt nextVal();
-
     string getId() const;
-    
-    uHugeInt getVal() const;
-
 };
 
 void addNewSequence(const string &key, uHugeInt val);

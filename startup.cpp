@@ -87,7 +87,7 @@ int main(const int argc, char *argv[])
         "    else\n"
         "        kill $PID\n"
         "        echo \"Stopped!\"\n"
-        "        echo \"\" > $PIDFILE\n"
+        "        rm -f $PIDFILE\n"
         "    fi\n\n"
         "    echo\n"
         "}\n"

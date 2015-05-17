@@ -36,9 +36,14 @@ This is designed for Linux platform only, other platforms may not work!
 
 - /usr/local/bin/sequencer start
 
+(OR)/path/to/custom/sequencer start
+
 **Stop the sequencer**
 
 - /usr/local/bin/sequencer stop
+
+(OR)/path/to/custom/sequencer stop
+
 
 
 # How to use it

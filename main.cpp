@@ -87,8 +87,10 @@ void signalHandler(int signal) {
             std::cerr << "Cought signal " << signal << "\n";
             break;
     }
-
+    
 	wait(NULL);
+    unlink(config.getPIDFile().c_str());
+    saveToDatabase();
 	exit(signal);
 }
 

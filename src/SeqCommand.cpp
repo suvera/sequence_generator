@@ -19,6 +19,8 @@
 
 #define INVALID_CMD_NO_KEY_JSON "{\"success\": 0, \"error\": \"key does not exist.\"}"
 
+#define INVALID_CMD_ALREADY_KEY_JSON "{\"success\": 0, \"error\": \"key already exist.\"}"
+
 #define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}"
 
 #define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, \"error\": \"Authentication failed.\"}"
@@ -34,6 +36,7 @@
 
 #define _CMD_STATUS "status"
 #define _CMD_GET "get"
+#define _CMD_CREATE "create"
 #define _CMD_SET "set"
 #define _CMD_UUID "uuid"
 
@@ -77,7 +80,7 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
         closeClientConnection(descriptor);
         return;
 
-    } else if (parsed[_OP_ID] == _CMD_GET || parsed[_OP_ID] == _CMD_SET) {
+    } else if (parsed[_OP_ID] == _CMD_GET || parsed[_OP_ID] == _CMD_SET || parsed[_OP_ID] == _CMD_CREATE) {
         if (!parsed.count(_KEY_ID)) {
             sendResponse(descriptor, INVALID_CMD_KEY_EMPTY_JSON);
             closeClientConnection(descriptor);
@@ -101,7 +104,7 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
             resp.append(SUCCESS_JSON_BEGIN).append("\"");
 
             // get next value
-            resp.append(std::to_string(counters[parsed[_KEY_ID]]->nextVal()));
+            resp.append(std::to_string(++counters[parsed[_KEY_ID]]->value));
 
             resp.append("\"").append(SUCCESS_JSON_END);
 
@@ -111,6 +114,40 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
         } else if (parsed[_OP_ID] == _CMD_SET) {
             if (!parsed.count(_KEY_VAL) || !isNumber(parsed[_KEY_VAL].c_str())) {
                 sendResponse(descriptor, INVALID_CMD_KEY_VAL_INVALID_JSON);
+                closeClientConnection(descriptor);
+                return;
+            }
+            
+            if (!counters.count(parsed[_KEY_ID])) {
+                sendResponse(descriptor, INVALID_CMD_NO_KEY_JSON);
+                closeClientConnection(descriptor);
+                return;
+            }
+            
+            std::string::size_type sz = 0;
+            uHugeInt val = std::stoll(parsed[_KEY_VAL], &sz, 10);
+            
+            counters[parsed[_KEY_ID]]->value = val;
+
+            string resp;
+            resp.append(SUCCESS_JSON_BEGIN).append("\"").append(parsed[_KEY_VAL]).append("\"").append(SUCCESS_JSON_END);
+
+            sendResponse(descriptor, resp.c_str());
+            closeClientConnection(descriptor);
+            return;
+        }  else if (parsed[_OP_ID] == _CMD_CREATE) {
+            if (!parsed.count(_KEY_VAL) || !isNumber(parsed[_KEY_VAL].c_str())) {
+                sendResponse(descriptor, INVALID_CMD_KEY_VAL_INVALID_JSON);
+                closeClientConnection(descriptor);
+                return;
+            }
+            
+            //std::cout << "counter size: " << counters.size() << "\n";
+            //for ( auto it = counters.begin(); it != counters.end(); ++it )
+                //std::cout << "counter: " << it->first << ":" << it->second->value << "\n";
+            
+            if (counters.count(parsed[_KEY_ID])) {
+                sendResponse(descriptor, INVALID_CMD_ALREADY_KEY_JSON);
                 closeClientConnection(descriptor);
                 return;
             }

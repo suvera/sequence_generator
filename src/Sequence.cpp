@@ -8,28 +8,13 @@
 ** -------------------------------------------------------------------------*/
 #include <Sequence.h>
 
-/**
- * return Next value in this sequence
- * 0 means failed
- */
-uHugeInt Sequence::nextVal() {
-    std::lock_guard<Mutex> lk(mtx);
-    
-    ++value;
-
-    return value;
-}
-
-uHugeInt Sequence::getVal() const {
-    return value;
-}
-
 
 string Sequence::getId() const {
     return id;
 }
 
 Sequence::Sequence() {
+    value = SEQUENCE_START_FROM;
 }
 
 Sequence::Sequence(uHugeInt val) {
@@ -37,6 +22,9 @@ Sequence::Sequence(uHugeInt val) {
 }
 
 Sequence::~Sequence() {
+}
+
+Sequence::Sequence(const Sequence&) {
 }
 
 
