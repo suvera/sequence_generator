@@ -106,6 +106,7 @@ int main(const int argc, char *argv[])
     cmdLine.add<string>("home-dir", 'd', "Seq Home dir path", false, SEQ_DEFAULT_HOME);
     cmdLine.add("daemon", 'D', "daemon mode");
     cmdLine.add("disable-logging", 'x', "Disable logging");
+    cmdLine.add("get-pid-file", 'I', "Get PID file location");
     cmdLine.add("debug", 'g', "Debug Logging");
     cmdLine.add("help", 'h', "Display Help");
     cmdLine.add("verbose", 'v', "Be verbose");
@@ -121,6 +122,11 @@ int main(const int argc, char *argv[])
     config.setHomeDir(cmdLine.get<string>("home-dir"));
     config.logEnabled = !cmdLine.exist("disable-logging");
     config.debug = cmdLine.exist("debug");
+    
+    if (cmdLine.exist("get-pid-file")) {
+        std::cout << config.getPIDFile();
+        exit(EXIT_SUCCESS);
+    }
 
     config.validate();
 
