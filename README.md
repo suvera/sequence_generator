@@ -8,10 +8,9 @@ This is designed for Linux platform only, other platforms may not work!
 
 ## Pre-Requisites
 
-1. C++11
-2. uuid
+1. libuuid
   - *sudo apt-get install uuid uuid-dev*
-3. -
+3. C++11
 
 ## Steps to Install
 
@@ -27,7 +26,7 @@ This is designed for Linux platform only, other platforms may not work!
 
 - /usr/local/bin/sequencer start
 
-Stop the sequencer
+**Stop the sequencer**
 
 - /usr/local/bin/sequencer stop
 
@@ -36,6 +35,7 @@ Stop the sequencer
 
 There are some example clients written under 'clients' folder
 
+**PHP**
 ```
 require_once(__DIR__ . '/Sequencer.php');
 
