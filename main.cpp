@@ -6,6 +6,9 @@
 #include <ctime>
 #include <unordered_map>
 #include <ctime>
+#include <algorithm> 
+#include <functional>
+#include <locale>
 #include <cctype>
 #include <cmdline.h>
 #include <unistd.h>
@@ -53,11 +56,11 @@ std::atomic<int> runningClients;
 extern unordered_map<string, Sequence*> counters;
 unordered_map<string, Sequence*> counters;
 
+#include "utils.h"
 #include "SeqConfig.cpp"
 extern SeqConfig config;
 SeqConfig config;
 #include "Sequence.cpp"
-#include "utils.h"
 #include "SeqCommand.cpp"
 #include "SeqListener.cpp"
 #include "Sequencer.cpp"
@@ -97,13 +100,14 @@ int main(const int argc, char *argv[])
 
     // 1. Read Configuration
     srand(time(NULL));
-
+    
     // create a parser
     cmdline::parser cmdLine;
     cmdLine.set_program_name("sequencer");
 
     cmdLine.add<int>("port", 'p', "port number", false, SEQ_DEFAULT_PORT, cmdline::range(1, 65535));
     cmdLine.add<string>("home-dir", 'd', "Seq Home dir path", false, SEQ_DEFAULT_HOME);
+    cmdLine.add<string>("config", 'c', "Config INI file path", false, "");
     cmdLine.add("daemon", 'D', "daemon mode");
     cmdLine.add("disable-logging", 'x', "Disable logging");
     cmdLine.add("get-pid-file", 'I', "Get PID file location");
@@ -123,12 +127,17 @@ int main(const int argc, char *argv[])
     config.logEnabled = !cmdLine.exist("disable-logging");
     config.debug = cmdLine.exist("debug");
     
+    if (cmdLine.get<string>("config").length()) {
+        config.load(cmdLine.get<string>("config"));
+    }
+
+    config.validate();
+
     if (cmdLine.exist("get-pid-file")) {
         std::cout << config.getPIDFile();
         exit(EXIT_SUCCESS);
     }
-
-    config.validate();
+    
 
     // 2. Config Logging
     el::Configurations logConf;
@@ -166,6 +175,7 @@ int main(const int argc, char *argv[])
     // write PID to file
     char pid[32];
     sprintf(pid, "%ld", (long)getpid());
+    //cout << "PID written to: " << pid << ", " << config.getPIDFile() << "\n";
     writeToFile(config.getPIDFile().c_str(), pid);
 
     // handle signals

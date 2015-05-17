@@ -7,13 +7,13 @@ using namespace std;
 // main
 int main(const int argc, char *argv[])
 {
-    if (argc == 1) {
-        cout << "Please provide path\n";
+    if (argc < 3) {
+        cout << "Please provide path and ini configuration file and PID file\n";
         exit(1);
     }
     
-    const char *begin = "#!/bin/sh\n"
-        "\n"
+    const char *begin = "#!/bin/bash\n"
+        "# \n"
         "# chkconfig: 35 90 12\n"
         "# Description: Start the sequencer server\n"
         "# \n"
@@ -24,51 +24,78 @@ int main(const int argc, char *argv[])
         "\n"
         "DESC=\"sequencer server\"\n"
         "NAME=sequencer\n"
-        "DAEMON="
     ;
     
     const char *end = "\n\n"
-        "PIDFILE=$($DAEMON -I)\n"
+        "DAEMON=\"$SEQUENCERD\"\n"
+        "if [ \"$CONFIG_INI\" != \"\" ]\n"
+        "then\n"
+        "DAEMON=\"$DAEMON -c $CONFIG_INI\"\n"
+        "fi\n\n"
         "\n"
         "# sanity check\n"
-        "[ -x $DAEMON ] || exit 0\n"
         "\n"
-        "if [ ! -x $DAEMON ] ; then\n"
-        "    echo \"No $DAEMON package installed\"\n"
+        "if [ ! -x \"$SEQUENCERD\" ] ; then\n"
+        "    echo \"No $SEQUENCERD package installed\"\n"
         "    exit 0\n"
-        "fi\n"
-        "\n"
-        "if [ -z \"$PIDFILE\" ] ; then\n"
-        "    echo \"ERROR: Could not find $NAME $PID_FILE\"\n"
-        "    exit 2\n"
         "fi\n"
         "\n"
         "\n"
         "# Start the service\n"
         "start() {\n"
-        "    initlog -c \"echo -n Starting $NAME server: \"\n"
-        "    ps -p `cat $PIDFILE`\n"
-        "    if [ $? = 1 ] \n"
+        "    echo \"Starting $NAME server: \"\n"
+        "    PID=\n"
+        "    STARTED=0\n"
+        "    if [ -e $PIDFILE ]; then\n"
+        "        PID=$(cat $PIDFILE)\n"
+        "    fi\n\n"
+        "    if [ \"$PID\" != \"\" ]; then\n"
+        "        ps -p $PID\n"
+        "        if [ $? != 1 ]; then \n"
+        "            STARTED=1\n"
+        "        fi\n"
+        "    fi\n\n"
+        "    if [ \"$STARTED\" == \"0\" ] \n"
         "    then\n"
         "        $DAEMON -D\n"
-        "        success $\"$NAME server startup\"\n"
+        "        echo \"Successfully Started!\"\n"
         "    else\n"
-        "        echo \"Already Running.\"\n"
-        "    fi\n"
+        "        echo \"Already Running!.\"\n"
+        "    fi\n\n"
         "    echo\n"
         "}\n"
         "\n"
         "# Restart the service\n"
         "stop() {\n"
-        "    initlog -c \"echo -n Stopping $NAME server: \"\n"
-        "    killproc -p $PIDFILE $DAEMON\n"
+        "    echo \"Stopping $NAME server: \"\n"
+        "    PID=\n"
+        "    STARTED=0\n"
+        "    if [ -e $PIDFILE ]; then\n"
+        "        echo \"PID file exist!\"\n"
+        "        PID=$(cat $PIDFILE)\n"
+        "        echo \"PID: $PID\"\n"
+        "    fi\n\n"
+        "    if [ \"$PID\" != \"\" ]; then\n"
+        "        ps -p $PID\n"
+        "        if [ \"$?\" != \"1\" ]; then \n"
+        "            STARTED=1\n"
+        "        fi\n"
+        "    fi\n\n"
+        "    if [ \"$STARTED\" == \"0\" ] \n"
+        "    then\n"
+        "        echo \"not running!\"\n"
+        "    else\n"
+        "        kill $PID\n"
+        "        echo \"Stopped!\"\n"
+        "        echo \"\" > $PIDFILE\n"
+        "    fi\n\n"
         "    echo\n"
         "}\n"
         "\n"
         "# Check status of the service\n"
         "status() {\n"
         "    ps -p `cat $PIDFILE`\n"
-        "    if [ $? = 1 ] \n"
+        "    if [ \"$?\" == \"1\" ] \n"
         "    then\n"
         "        echo \"Not Running.\"\n"
         "    else\n"
@@ -93,14 +120,25 @@ int main(const int argc, char *argv[])
         "        start\n"
         "        ;;\n"
         "  *)\n"
-        "        echo $\"Usage: $0 {start|stop|restart|reload|status}\"\n"
+        "        echo \"Usage: $0 {start|stop|restart|reload|status}\"\n"
         "        exit 1\n"
         "esac\n"
         "exit 0\n"
     ;
     
     string s = begin;
+    s.append("SEQUENCERD=");
     s.append(argv[1]);
+    s.append("\n");
+
+    s.append("CONFIG_INI=");
+    s.append(argv[2]);
+    s.append("\n");
+
+    s.append("PIDFILE=");
+    s.append(argv[3]);
+    s.append("\n");
+
     s.append(end);
     
     cout << s;

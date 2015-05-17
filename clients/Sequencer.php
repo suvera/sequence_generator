@@ -98,7 +98,7 @@ class Sequencer {
 
         $resp = $this->_call($in);
         
-        return ($resp === false) ? return NULL : $resp['data'];
+        return ($resp === false) ? NULL : $resp['data'];
     }
     
     
@@ -183,7 +183,7 @@ class Sequencer {
         
         $resp = $this->_call($in);
         
-        return ($resp === false) ? return NULL : $resp['data'];
+        return ($resp === false) ? NULL : $resp['data'];
     }
 }
 
