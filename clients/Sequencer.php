@@ -85,22 +85,38 @@ class Sequencer {
     }
 
     /**
-     * get next Sequence
+     * get next value of the Sequence i.e. seq++
      *
-     *   - NULL means no sequence exists
+     *   - NULL means no sequence does no exists
      *
      * @param string $key
      * @return string|null
      * @throws SequencerException
      */
     public function nextSequence($key) {
-        $in = 'op=get&key=' . $key;
+        $in = 'op=next&key=' . $key;
 
         $resp = $this->_call($in);
         
         return ($resp === false) ? NULL : $resp['data'];
     }
-    
+
+    /**
+     * get current value of a Sequence
+     *
+     *   - NULL means no sequence does no exists
+     *
+     * @param string $key
+     * @return string|null
+     * @throws SequencerException
+     */
+    public function getSequence($key) {
+        $in = 'op=get&key=' . $key;
+
+        $resp = $this->_call($in);
+
+        return ($resp === false) ? NULL : $resp['data'];
+    }
     
     /**
      * call the API
