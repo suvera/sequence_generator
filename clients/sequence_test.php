@@ -28,7 +28,7 @@ for ($i = 0; $i < $limit; $i++) {
     $seq = $obj->nextSequence($key);
     //echo 'nextSequence: ' . $seq . "\n";
 }
-echo "Sequence Time: " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
+echo "Sequence Time (Calls: $limit): " . number_format(round(microtime(true) - $time, 8), 8) . "\n";
 
 
 $time = microtime(true);
@@ -36,5 +36,5 @@ for ($i = 0; $i < $limit; $i++) {
     $seq = $obj->getUUID();
     //echo 'getUUID: ' . $seq . "\n";
 }
-echo "UUID Time: " .number_format(round(microtime(true) - $time, 8), 8) . "\n";
+echo "UUID Time (Calls: $limit): " .number_format(round(microtime(true) - $time, 8), 8) . "\n";
 

@@ -30,6 +30,8 @@
 logs
 test.cpp
 test.php
+test.log
+test.db
 sequencer
 builds
 server
