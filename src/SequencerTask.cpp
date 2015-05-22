@@ -48,6 +48,9 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
         cmd = SET;
     } else if (cmdText == _UUID_TEXT) {
         cmd = UUID;
+    } else if (cmdText == _RESET_TEXT) {
+        cmd = SET;
+        parsed[_KEY_VAL] = "0";
     } else {
         sendResponse(descriptor, UNKNOWN_CMD_JSON);
         closeClientConnection(descriptor);
@@ -100,15 +103,19 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
                         return;
                     }
 
-                    string resp;
-                    resp.append(SUCCESS_JSON_BEGIN).append("\"");
-
                     // get next value
-                    resp.append(std::to_string(++counters[key]->value));
+                    if (counters[key]->value == ULLONG_MAX) {
+                        sendResponse(descriptor, INTEGER_OVERFLOW_JSON);
+                    } else {
+                        string resp;
+                        resp.append(SUCCESS_JSON_BEGIN).append("\"");
+                        
+                        resp.append(std::to_string(++counters[key]->value));
+                        resp.append("\"").append(SUCCESS_JSON_END);
 
-                    resp.append("\"").append(SUCCESS_JSON_END);
-
-                    sendResponse(descriptor, resp.c_str());
+                        sendResponse(descriptor, resp.c_str());
+                    }
+                    
                     closeClientConnection(descriptor);
                     return;
                 }

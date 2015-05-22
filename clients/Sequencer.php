@@ -127,7 +127,7 @@ class Sequencer {
      */
     private function _call($in) {
         if (socket_write($this->_conn, $in, strlen($in)) === false) {
-            throw new SequencerException("socket_connect() failed. Reason: ($result) " . socket_strerror(socket_last_error($this->_conn)) . "");
+            throw new SequencerException("socket_connect() failed. Reason: " . socket_strerror(socket_last_error($this->_conn)) . "");
         }
 
         while ($out = socket_read($this->_conn, 2048)) {
@@ -137,7 +137,7 @@ class Sequencer {
                 return $resp;
             }
 
-            throw new SequencerException("_call() API failed. Reason: " . $resp['error'] . "");
+            throw new SequencerException("_call() API failed. Reason: " . $resp['error'] . "", isset($resp['code']) ? $resp['code'] : 0);
         }
 
         return false;
@@ -158,6 +158,23 @@ class Sequencer {
         
         return (bool) $resp;
     }
+    
+    
+    /**
+     * reset existing Sequence to zero
+     *
+     * @param string $key
+     * @return bool
+     * @throws SequencerException
+     */
+    public function resetSequence($key) {
+        $in = 'op=reset&key=' . $key;
+
+        $resp = $this->_call($in);
+        
+        return (bool) $resp;
+    }
+    
     
     /**
      * create new Sequence
