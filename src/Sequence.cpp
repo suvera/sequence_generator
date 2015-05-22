@@ -6,8 +6,6 @@
 **
 ** Author: rnarmala
 ** -------------------------------------------------------------------------*/
-#include <Sequence.h>
-
 
 string Sequence::getId() const {
     return id;
