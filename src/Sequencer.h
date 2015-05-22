@@ -10,6 +10,7 @@
 #define _SEQUENCER_H
 
 #include <cstdlib>
+#include <climits>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -72,22 +73,25 @@ std::atomic<int> runningClients;
 // Note: update this in INVALID_CMD_KEY_JSON as well
 #define MAX_KEY_LENGTH 64
 
-#define INVALID_CMD_JSON "{\"success\": 0, \"error\": \"Invalid request.\"}"
+#define INVALID_CMD_JSON "{\"success\": 0, code: 100, \"error\": \"Invalid request.\"}"
 
-#define UNKNOWN_CMD_JSON "{\"success\": 0, \"error\": \"Unknown command.\"}"
+#define UNKNOWN_CMD_JSON "{\"success\": 0, code: 101, \"error\": \"Unknown command.\"}"
 
-#define INVALID_CMD_KEY_EMPTY_JSON "{\"success\": 0, \"error\": \"Please provide a key.\"}"
+#define INVALID_CMD_KEY_EMPTY_JSON "{\"success\": 0, code: 102, \"error\": \"Please provide a key.\"}"
 
-#define INVALID_CMD_KEY_JSON "{\"success\": 0, \"error\": \"Invalid Key, Key must be alpha numeric and should start with a letter And length must be atleast 1 and must not exceed 64.\"}"
+#define INVALID_CMD_KEY_JSON "{\"success\": 0, code: 103, \"error\": \"Invalid Key, Key must be alpha numeric and should start with a letter And length must be atleast 1 and must not exceed 64.\"}"
 
-#define INVALID_CMD_NO_KEY_JSON "{\"success\": 0, \"error\": \"key does not exist.\"}"
+#define INVALID_CMD_NO_KEY_JSON "{\"success\": 0, code: 104, \"error\": \"key does not exist.\"}"
 
-#define INVALID_CMD_ALREADY_KEY_JSON "{\"success\": 0, \"error\": \"key already exist.\"}"
+#define INVALID_CMD_ALREADY_KEY_JSON "{\"success\": 0, code: 105, \"error\": \"key already exist.\"}"
 
-#define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}"
+#define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, code: 106, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}"
 
-#define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, \"error\": \"Authentication failed.\"}"
-#define INVALID_TOO_MANY_CONNECTIONS_JSON "{\"success\": 0, \"error\": \"Too many connections.\"}"
+#define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, code: 107, \"error\": \"Authentication failed.\"}"
+
+#define INVALID_TOO_MANY_CONNECTIONS_JSON "{\"success\": 0, code: 108, \"error\": \"Too many connections.\"}"
+
+#define INTEGER_OVERFLOW_JSON "{\"success\": 0, code: 109, \"error\": \"Integer overflow.\"}"
 
 #define SUCCESS_JSON_BEGIN "{\"success\": 1, \"data\": "
 
@@ -102,6 +106,7 @@ std::atomic<int> runningClients;
 #define _GET_TEXT "get"
 #define _CREATE_TEXT "create"
 #define _SET_TEXT "set"
+#define _RESET_TEXT "reset"
 #define _UUID_TEXT "uuid"
 
 enum _CMD {
