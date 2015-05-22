@@ -12,8 +12,8 @@ UUIDFLAGS= -luuid
 
 ifdef prefix
 bindir=$(prefix)/bin
-mkdir -p $(prefix)
-mkdir -p $(bindir)
+$(shell mkdir -p $(prefix))
+$(shell mkdir -p $(bindir))
 endif
 
 GET_PID_FILE=$(BUILDS)/sequencerd -I

@@ -39,12 +39,16 @@ int readFromFile(const string& file, string& data) {
     size_t result;
 
     // obtain file size:
-    fseek(fp , 0 , SEEK_END);
-    lSize = ftell (fp);
+    fseek(fp, 0, SEEK_END);
+    lSize = ftell(fp);
     rewind(fp);
 
+    if (lSize == 0) {
+        return 1;
+    }
+
     // allocate memory to contain the whole file:
-    buffer = (char*) malloc (sizeof(char)*lSize);
+    buffer = (char*) malloc(sizeof(char) * lSize);
     if (buffer == NULL) {
         fclose(fp);
         LOG(ERROR) << "Memory error in readFromFile " << stderr;

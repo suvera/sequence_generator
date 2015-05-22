@@ -1,59 +1,11 @@
 /* ---------------------------------------------------------------------------
 ** see LICENSE.md
 **
-** SeqCommand.cpp
+** SequencerTask.cpp
+**     Sequencer Task Object
 **
 ** Author: rnarmala
 ** -------------------------------------------------------------------------*/
-#ifndef _SEQUENCE_CMD
-#define _SEQUENCE_CMD
-
-// Note: update this in INVALID_CMD_KEY_JSON as well
-#define MAX_KEY_LENGTH 64
-
-#define INVALID_CMD_JSON "{\"success\": 0, \"error\": \"Invalid request.\"}"
-
-#define UNKNOWN_CMD_JSON "{\"success\": 0, \"error\": \"Unknown command.\"}"
-
-#define INVALID_CMD_KEY_EMPTY_JSON "{\"success\": 0, \"error\": \"Please provide a key.\"}"
-
-#define INVALID_CMD_KEY_JSON "{\"success\": 0, \"error\": \"Invalid Key, Key must be alpha numeric and should start with a letter And length must be atleast 1 and must not exceed 64.\"}"
-
-#define INVALID_CMD_NO_KEY_JSON "{\"success\": 0, \"error\": \"key does not exist.\"}"
-
-#define INVALID_CMD_ALREADY_KEY_JSON "{\"success\": 0, \"error\": \"key already exist.\"}"
-
-#define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}"
-
-#define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, \"error\": \"Authentication failed.\"}"
-#define INVALID_TOO_MANY_CONNECTIONS_JSON "{\"success\": 0, \"error\": \"Too many connections.\"}"
-
-#define SUCCESS_JSON_BEGIN "{\"success\": 1, \"data\": "
-
-#define SUCCESS_JSON_END "}"
-
-#define _OP_ID "op"
-#define _KEY_ID "key"
-#define _KEY_VAL "value"
-
-#define _STATUS_TEXT "status"
-#define _NEXT_TEXT "next"
-#define _GET_TEXT "get"
-#define _CREATE_TEXT "create"
-#define _SET_TEXT "set"
-#define _UUID_TEXT "uuid"
-
-enum _CMD {
-    STATUS,
-    NEXT,
-    GET,
-    CREATE,
-    SET,
-    UUID,
-    UNKNOWN
-};
-
-#define READ_BYTES 256
 
 // send response to client
 int sendResponse(int& descriptor, const char* resp) {
@@ -271,43 +223,38 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
 
 
 // Sequencer Task
-struct SequencerTask {
-    SequencerTask() {
+SequencerTask::SequencerTask() {
+}
+
+SequencerTask::SequencerTask(const SequencerTask&) {
+}
+
+// run this task
+void SequencerTask::run(int descriptor, struct sockaddr_in clientAddress) {
+    if (config->debug) {
+        char clientIP[50];
+
+        inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
+        int clientPort = ntohs(clientAddress.sin_port);
+
+        //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
+        LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
     }
 
-    SequencerTask(const SequencerTask&) {
+    // Read Bytes
+    char buffer[READ_BYTES];
+    ssize_t len;
+
+    while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
+        buffer[len] = 0;
+
+        //printf("processRequest - %s\n", request);
+        LOG(INFO) << "processRequest: " << buffer;
+
+        Thread t(&processTask, buffer, len, descriptor);
+        t.join();
     }
 
-    // run this task
-    void run(int descriptor, struct sockaddr_in clientAddress) {
-        if (config.debug) {
-            char clientIP[50];
-
-            inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
-            int clientPort = ntohs(clientAddress.sin_port);
-
-            //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
-            LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
-        }
-
-        // Read Bytes
-        char buffer[READ_BYTES];
-        ssize_t len;
-
-        while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
-            buffer[len] = 0;
-
-            //printf("processRequest - %s\n", request);
-            LOG(INFO) << "processRequest: " << buffer;
-
-            Thread t(&processTask, buffer, len, descriptor);
-            t.join();
-        }
-
-        // connection closed.
-        runningClients--;
-    }
-};
-
-
-#endif
+    // connection closed.
+    runningClients--;
+}
