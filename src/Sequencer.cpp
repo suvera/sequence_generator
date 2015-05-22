@@ -56,7 +56,7 @@ void checkAndExitOnOldPid() {
         exit(EXIT_FAILURE);
     }
 
-    if (oldPID.length() && 0 == kill(pid, 0)) {
+    if (0 == kill(pid, 0)) {
         std::cerr << "Process already running, PID found in the PID file " << config->getPIDFile() << "\n";
         LOG(ERROR) << "Process already running, PID found in the PID file " << config->getPIDFile() << "\n";
         exit(EXIT_FAILURE);

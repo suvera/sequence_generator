@@ -44,6 +44,7 @@ int readFromFile(const string& file, string& data) {
     rewind(fp);
 
     if (lSize == 0) {
+        fclose(fp);
         return 1;
     }
 
