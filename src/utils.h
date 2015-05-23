@@ -140,6 +140,11 @@ void parseString(const char *queryStr, StringMap& list) {
                 case '+':
                     value.append(1, ' ');
                     break;
+                    
+                case '\n':
+                case '\r':
+                    // skip the new lines
+                    break;
 
                 default:
                     value.append(1, *queryStr);
