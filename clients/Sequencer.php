@@ -5,6 +5,7 @@
  * @author rnarmala
  */
 define('SEQUENCER_DEFAULT_PORT', 5088);
+define('SEQUENCER_DEFAULT_READ_BYTES', 2048);
 
 class SequencerException extends Exception {}
 
@@ -130,7 +131,7 @@ class Sequencer {
             throw new SequencerException("socket_connect() failed. Reason: " . socket_strerror(socket_last_error($this->_conn)) . "");
         }
 
-        while ($out = socket_read($this->_conn, 2048)) {
+        while ($out = socket_read($this->_conn, SEQUENCER_DEFAULT_READ_BYTES)) {
             $resp = json_decode($out, true);
 
             if ($resp['success']) {
@@ -198,11 +199,14 @@ class Sequencer {
      *
      * @param string $key
      * @return bool
+     * @throws SequencerException
      */
     public function removeSequence($key) {
-        // permission check
+        $in = 'op=remove&key=' . $key;
 
-        return false;
+        $resp = $this->_call($in);
+        
+        return (bool) $resp;
     }
 
     /**

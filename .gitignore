@@ -38,4 +38,7 @@ server
 server.*
 client
 client.*
-
+clients/.settings
+clients/target
+clients/.classpath
+clients/.project

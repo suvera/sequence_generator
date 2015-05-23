@@ -73,29 +73,29 @@ std::atomic<int> runningClients;
 // Note: update this in INVALID_CMD_KEY_JSON as well
 #define MAX_KEY_LENGTH 64
 
-#define INVALID_CMD_JSON "{\"success\": 0, code: 100, \"error\": \"Invalid request.\"}"
+#define INVALID_CMD_JSON "{\"success\": 0, \"code\": 100, \"error\": \"Invalid request.\"}\n"
 
-#define UNKNOWN_CMD_JSON "{\"success\": 0, code: 101, \"error\": \"Unknown command.\"}"
+#define UNKNOWN_CMD_JSON "{\"success\": 0, \"code\": 101, \"error\": \"Unknown command.\"}\n"
 
-#define INVALID_CMD_KEY_EMPTY_JSON "{\"success\": 0, code: 102, \"error\": \"Please provide a key.\"}"
+#define INVALID_CMD_KEY_EMPTY_JSON "{\"success\": 0, \"code\": 102, \"error\": \"Please provide a key.\"}\n"
 
-#define INVALID_CMD_KEY_JSON "{\"success\": 0, code: 103, \"error\": \"Invalid Key, Key must be alpha numeric and should start with a letter And length must be atleast 1 and must not exceed 64.\"}"
+#define INVALID_CMD_KEY_JSON "{\"success\": 0, \"code\": 103, \"error\": \"Invalid Key, Key must be alpha numeric and should start with a letter And length must be atleast 1 and must not exceed 64.\"}\n"
 
-#define INVALID_CMD_NO_KEY_JSON "{\"success\": 0, code: 104, \"error\": \"key does not exist.\"}"
+#define INVALID_CMD_NO_KEY_JSON "{\"success\": 0, \"code\": 104, \"error\": \"key does not exist.\"}\n"
 
-#define INVALID_CMD_ALREADY_KEY_JSON "{\"success\": 0, code: 105, \"error\": \"key already exist.\"}"
+#define INVALID_CMD_ALREADY_KEY_JSON "{\"success\": 0, \"code\": 105, \"error\": \"key already exist.\"}\n"
 
-#define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, code: 106, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}"
+#define INVALID_CMD_KEY_VAL_INVALID_JSON "{\"success\": 0, \"code\": 106, \"error\": \"Inavalid value, value cannot be empty and must be a positive integer.\"}\n"
 
-#define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, code: 107, \"error\": \"Authentication failed.\"}"
+#define INVALID_CMD_UNAUTH_JSON "{\"success\": 0, \"code\": 107, \"error\": \"Authentication failed.\"}\n"
 
-#define INVALID_TOO_MANY_CONNECTIONS_JSON "{\"success\": 0, code: 108, \"error\": \"Too many connections.\"}"
+#define INVALID_TOO_MANY_CONNECTIONS_JSON "{\"success\": 0, \"code\": 108, \"error\": \"Too many connections.\"}\n"
 
-#define INTEGER_OVERFLOW_JSON "{\"success\": 0, code: 109, \"error\": \"Integer overflow.\"}"
+#define INTEGER_OVERFLOW_JSON "{\"success\": 0, \"code\": 109, \"error\": \"Integer overflow.\"}\n"
 
 #define SUCCESS_JSON_BEGIN "{\"success\": 1, \"data\": "
 
-#define SUCCESS_JSON_END "}"
+#define SUCCESS_JSON_END "}\n"
 
 #define _OP_ID "op"
 #define _KEY_ID "key"
