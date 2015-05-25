@@ -9,4 +9,4 @@ g++ -std=c++11 -lpthread test.cpp
 // Installs
 sudo apt-get install uuid uuid-dev
 
-make prefix=/home/rnarmala config=/home/rnarmala/seq install
+make prefix=/home/rnarmala config=/home/rnarmala/seq.ini install
