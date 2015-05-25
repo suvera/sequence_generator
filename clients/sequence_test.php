@@ -6,7 +6,7 @@
  */
 require_once(__DIR__ . '/Sequencer.php');
 
-$key = 'key_' . mt_rand(1, 10);
+$key = 'key_' . mt_rand(1, 150);
 
 echo "Using key '$key' ...\n";
 $time = microtime(true);

@@ -244,7 +244,6 @@ void SequencerTask::run(int descriptor, struct sockaddr_in clientAddress) {
         inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
         int clientPort = ntohs(clientAddress.sin_port);
 
-        //printf("\nReceived request from Client: %s:%d\n", clientIP, clientPort);
         LOG(INFO) << "Received request from Client: " << clientIP << ", port: " << clientPort;
     }
 
@@ -255,11 +254,11 @@ void SequencerTask::run(int descriptor, struct sockaddr_in clientAddress) {
     while ((len = read(descriptor, buffer, sizeof(buffer))) > 0) {
         buffer[len] = 0;
 
-        //printf("processRequest - %s\n", request);
-        LOG(INFO) << "processRequest: " << buffer;
+        if (config->debug) {
+            LOG(INFO) << "processing request: " << buffer;
+        }
 
-        Thread t(&processTask, buffer, len, descriptor);
-        t.join();
+        processTask(buffer, len, descriptor);
     }
 
     // connection closed.

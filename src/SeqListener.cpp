@@ -76,7 +76,10 @@ void SeqListener::listenThread() {
     while (descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen)) {
 
         if (runningClients > config->maxConnections) {
-            LOG(ERROR) << "Too many connections, allowed limit exhausted!";
+            char clientIP[50];
+            inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);
+
+            LOG(ERROR) << "Too many connections, allowed limit exhausted!, Rejected client: " << clientIP << ", port: " << ntohs(clientAddress.sin_port);
             sendResponse(descriptor, INVALID_TOO_MANY_CONNECTIONS_JSON);
             close(descriptor);
             continue;
@@ -99,6 +102,5 @@ int SeqListener::listenNow() {
 
     listening = true;
 
-    Thread lt (&SeqListener::listenThread, this);
-    lt.join();
+    listenThread();
 }
