@@ -310,6 +310,10 @@ extern fstream dbStream;
 fstream dbStream;
 
 
+extern uBigInt dbStreamPos;
+uBigInt dbStreamPos = 0;
+
+
 // Save data to database
 void saveToDatabase(bool);
 

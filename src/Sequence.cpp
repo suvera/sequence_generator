@@ -36,7 +36,7 @@ void addNewSequence(const string &key, uHugeInt val) {
     
     counters[key] = new Sequence(val);
     
-    cout << "Created new, size now: " << counters.size() << "\n";
+    //cout << "Created new, size now: " << counters.size() << "\n";
 }
 
 // UUIDMtx

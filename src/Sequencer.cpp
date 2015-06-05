@@ -122,7 +122,7 @@ void _syncDbStream() {
     dbStream.flush();
     
     if (dbStream.fail()) {
-        LOG(ERROR) << "Failed, The Disk synchronization operation failed due to i/0 error  " << config->getDataFile();
+        LOG(ERROR) << "Failed, The Disk synchronization operation failed due to I/O error  " << config->getDataFile();
     }
     
     if (dbStream.bad()) {
@@ -134,11 +134,15 @@ void _writeDBStream(const char* data, const uBigInt offset, const uBigInt len) {
     dbStream.seekp(offset, ios::beg);
 
     if (dbStream.fail()) {
-        LOG(ERROR) << "Failed, seekp to offset " << offset << " failed due to i/0 error " << config->getDataFile();
+        LOG(ERROR) << "Failed, seekp to offset " << offset << " failed due to I/O error " << config->getDataFile();
     }
 
     if (dbStream.bad()) {
         LOG(ERROR) << "Failed, seekp to offset " << offset << " failed due to Either an insertion on the stream failed, or some other error happened " << config->getDataFile();
+    }
+    
+    if (dbStream.eof()) {
+        dbStream.seekp(0, ios::end);
     }
     
     for (int i=0; i < len; i++) {
@@ -149,7 +153,7 @@ void _writeDBStream(const char* data, const uBigInt offset, const uBigInt len) {
     // dbStream.write(data, len);
 
     if (dbStream.fail()) {
-        LOG(ERROR) << "Failed, writing to database failed due to i/0 error " << config->getDataFile();
+        LOG(ERROR) << "Failed, writing to database failed due to I/O error " << config->getDataFile();
     }
 
     if (dbStream.bad()) {
@@ -159,7 +163,6 @@ void _writeDBStream(const char* data, const uBigInt offset, const uBigInt len) {
 
 // Save data to database
 void saveToDatabase(bool force) {
-    static uBigInt LAST_END_POS = MAX_SEQ_LENGTH;
     
     if (!dbStream.is_open()) {
         dbStream.open(config->getDataFile().c_str(), fstream::in | fstream::out | fstream::binary);
@@ -195,10 +198,10 @@ void saveToDatabase(bool force) {
             
             if (!it->second->offset) {
                 // add at the end of the file
-                it->second->offset = LAST_END_POS;
+                it->second->offset = dbStreamPos;
                 
                 // This is okay
-                LAST_END_POS += MAX_KEY_LENGTH + MAX_SEQ_LENGTH;
+                dbStreamPos += MAX_KEY_LENGTH + MAX_SEQ_LENGTH;
             }
             
             string val = std::to_string(it->second->value);
@@ -230,7 +233,7 @@ void saveToDatabase(bool force) {
 
 // read data from database
 int readFromDatabase() {
-
+    
     if (!fileExists(config->getDataFile())) {
         LOG(INFO) << "data file does not exist! " << config->getDataFile() << "\n";
         writeToFile(config->getDataFile().c_str(), "");
@@ -248,39 +251,54 @@ int readFromDatabase() {
     
     counters.clear();
     
-    char seq[MAX_SEQ_LENGTH], key[MAX_KEY_LENGTH];
+    char seq[MAX_SEQ_LENGTH+1], key[MAX_KEY_LENGTH+1];
+    memset(seq, 0, sizeof(seq));
+    memset(key, 0, sizeof(key));
     
     // read total number
     dbStream.seekg(0, fstream::beg);
     dbStream.read(seq, MAX_SEQ_LENGTH);
     
     if (dbStream.fail()) {
-        LOG(ERROR) << "Logical error on i/o operation, while reading total count from file " << config->getDataFile();
+        LOG(ERROR) << "Logical error on I/O operation, while reading total count from file " << config->getDataFile();
     }
     
-    uBigInt offset = MAX_SEQ_LENGTH;
+    dbStreamPos = MAX_SEQ_LENGTH;
+    
+    dbStream.read(key, MAX_KEY_LENGTH);
     while (!dbStream.eof()) {
-        dbStream.read(key, MAX_KEY_LENGTH);
         
         if (dbStream.fail()) {
-            LOG(ERROR) << "Logical error on i/o operation, while reading data sequence KEY from file, offset: " << offset << ", " << config->getDataFile();
+            LOG(ERROR) << "Logical error on I/O operation, while reading data sequence KEY from file, offset: " << dbStreamPos << ", " << config->getDataFile();
+            return 0;
         }
 
         dbStream.read(seq, MAX_SEQ_LENGTH);
 
         if (dbStream.fail()) {
-            LOG(ERROR) << "Logical error on i/o operation, while reading data sequence VALUE from file, offset: " << offset << ", " << config->getDataFile();
+            LOG(ERROR) << "Logical error on I/O operation, while reading data sequence VALUE from file, offset: " << dbStreamPos << ", " << config->getDataFile();
+            return 0;
         }
         
         if (strlen(key)) {
-            counters[key] = new Sequence(toHugeInt(seq));
-            counters[key]->dirty = false;
-            counters[key]->offset = offset;
+            Sequence *newSeq = new Sequence(toHugeInt(seq));
+            
+            newSeq->dirty = false;
+            newSeq->offset = dbStreamPos;
+            
+            counters[key] = newSeq;
+            
+            memset(seq, 0, sizeof(seq));
+            memset(key, 0, sizeof(key));
+            
         } else {
-            LOG(ERROR) << "empty KEY and VALUE found on read. offset: " << offset << ", " << config->getDataFile();
+            LOG(ERROR) << "empty KEY and VALUE found on read. offset: " << dbStreamPos << ", " << config->getDataFile();
+            return 0;
         }
 
-        offset += MAX_KEY_LENGTH + MAX_SEQ_LENGTH;
+        dbStreamPos += MAX_KEY_LENGTH + MAX_SEQ_LENGTH;
+        
+        dbStream.read(key, MAX_KEY_LENGTH);
     }
     
     dbStream.close();
