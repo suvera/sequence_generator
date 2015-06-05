@@ -106,7 +106,7 @@ void configLogger() {
     }
     
     if (config->debug) {
-        //cout << "Debugging mode enabled " << config->getLogFile() << "\n";
+        cout << "Debugging mode enabled, see logs " << config->getLogFile() << "\n";
     }
     
     if (config->logEnabled && !config->debug) {
@@ -130,7 +130,7 @@ void _syncDbStream() {
     }
 }
 
-void _writeDBSteram(const char* data, const uBigInt offset, const uBigInt len) {
+void _writeDBStream(const char* data, const uBigInt offset, const uBigInt len) {
     dbStream.seekp(offset, ios::beg);
 
     if (dbStream.fail()) {
@@ -146,7 +146,7 @@ void _writeDBSteram(const char* data, const uBigInt offset, const uBigInt len) {
     }
     
     // due to null terminated characters in the middle, write does not work here
-    //dbStream.write(data, len);
+    // dbStream.write(data, len);
 
     if (dbStream.fail()) {
         LOG(ERROR) << "Failed, writing to database failed due to i/0 error " << config->getDataFile();
@@ -190,7 +190,7 @@ void saveToDatabase(bool force) {
                     t[i++] = *c;
                 }
                 
-                _writeDBSteram(t, 0, MAX_SEQ_LENGTH);
+                _writeDBStream(t, 0, MAX_SEQ_LENGTH);
             }
             
             if (!it->second->offset) {
@@ -216,10 +216,8 @@ void saveToDatabase(bool force) {
             for (auto c = val.cbegin(); c != val.cend(); ++c) {
                 s[i++] = *c;
             }
-            
-            //cout << "written bytes " << ", Key: " << it->first << ", value: " << val << "\n";
-            
-            _writeDBSteram(s, it->second->offset, sizeof(s));
+
+            _writeDBStream(s, it->second->offset, sizeof(s));
         }
     }
     
@@ -235,9 +233,7 @@ int readFromDatabase() {
 
     if (!fileExists(config->getDataFile())) {
         LOG(INFO) << "data file does not exist! " << config->getDataFile() << "\n";
-        //return 0;
         writeToFile(config->getDataFile().c_str(), "");
-        //truncate(config->getDataFile().c_str(), 1024 * 1024);
     }
 
     if (!dbStream.is_open()) {
@@ -264,21 +260,14 @@ int readFromDatabase() {
     
     uBigInt offset = MAX_SEQ_LENGTH;
     while (!dbStream.eof()) {
-    
-        //dbStream.seekg(offset, fstream::beg);
         dbStream.read(key, MAX_KEY_LENGTH);
         
         if (dbStream.fail()) {
             LOG(ERROR) << "Logical error on i/o operation, while reading data sequence KEY from file, offset: " << offset << ", " << config->getDataFile();
         }
-        
-        offset += MAX_KEY_LENGTH;
-        
-        //dbStream.seekg(offset, fstream::beg);
+
         dbStream.read(seq, MAX_SEQ_LENGTH);
-        
-        offset += MAX_SEQ_LENGTH;
-        
+
         if (dbStream.fail()) {
             LOG(ERROR) << "Logical error on i/o operation, while reading data sequence VALUE from file, offset: " << offset << ", " << config->getDataFile();
         }
@@ -288,8 +277,10 @@ int readFromDatabase() {
             counters[key]->dirty = false;
             counters[key]->offset = offset;
         } else {
-            LOG(ERROR) << "empty KEY and VALUE found on read " << config->getDataFile();
+            LOG(ERROR) << "empty KEY and VALUE found on read. offset: " << offset << ", " << config->getDataFile();
         }
+
+        offset += MAX_KEY_LENGTH + MAX_SEQ_LENGTH;
     }
     
     dbStream.close();
@@ -364,7 +355,10 @@ void Sequencer::saveToDiskTask() {
 }
 
 void Sequencer::start() {
-    readFromDatabase();
+    if (!readFromDatabase()) {
+        std::cerr << "Unable to read Database file " << config->getDataFile() << "\n";
+        exit(EXIT_FAILURE);
+    }
 
     LOG(INFO) << "threadSentinel starting ... ";
     sentinelThread = new Thread(&Sequencer::sentinelTask, Sequencer());
