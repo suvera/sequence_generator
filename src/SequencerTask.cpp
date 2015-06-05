@@ -111,6 +111,8 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
                         resp.append(SUCCESS_JSON_BEGIN).append("\"");
                         
                         resp.append(std::to_string(++counters[key]->value));
+                        counters[key]->dirty = true;
+                        
                         resp.append("\"").append(SUCCESS_JSON_END);
 
                         sendResponse(descriptor, resp.c_str());
@@ -162,6 +164,7 @@ void processTask(const char* cmdStr, int cmdStrLen, int descriptor) {
                     uHugeInt val = std::stoll(value, &sz, 10);
 
                     counters[key]->value = val;
+                    counters[key]->dirty = true;
 
                     string resp;
                     resp.append(SUCCESS_JSON_BEGIN).append("\"").append(value).append("\"").append(SUCCESS_JSON_END);

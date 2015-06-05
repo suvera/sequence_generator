@@ -32,7 +32,7 @@ void signalHandler(int signal) {
 
 	wait(NULL);
     unlink(config->getPIDFile().c_str());
-    saveToDatabase();
+    saveToDatabase(true);
 	exit(signal);
 }
 
@@ -100,6 +100,15 @@ void configLogger() {
     logConf.setGlobally(LogConfigType::Filename, config->getLogFile());
     logConf.setGlobally(LogConfigType::ToStandardOutput, string("false"));
     logConf.setGlobally(LogConfigType::MaxLogFileSize, string("2048"));
+    
+    if (config->logEnabled) {
+        //cout << "Logging enabled " << config->getLogFile() << "\n";
+    }
+    
+    if (config->debug) {
+        //cout << "Debugging mode enabled " << config->getLogFile() << "\n";
+    }
+    
     if (config->logEnabled && !config->debug) {
         logConf.set(LogLevel::Info, LogConfigType::Enabled, "false");
         logConf.set(LogLevel::Trace, LogConfigType::Enabled, "false");
@@ -109,77 +118,182 @@ void configLogger() {
     el::Loggers::reconfigureLogger("default", logConf);
 }
 
-// Save data to database
-void saveToDatabase() {
+void _syncDbStream() {
+    dbStream.flush();
+    
+    if (dbStream.fail()) {
+        LOG(ERROR) << "Failed, The Disk synchronization operation failed due to i/0 error  " << config->getDataFile();
+    }
+    
+    if (dbStream.bad()) {
+        LOG(ERROR) << "Failed, The Disk synchronization operation failed due to Either an insertion on the stream failed, or some other error happened " << config->getDataFile();
+    }
+}
 
-    string s;
-    s.append(std::to_string(counters.size()));
-    s.append("\n");
+void _writeDBSteram(const char* data, const uBigInt offset, const uBigInt len) {
+    dbStream.seekp(offset, ios::beg);
 
-    for (auto it = counters.begin(); it != counters.end(); it++) {
-        s.append(it->first);
-        s.append(":");
-        s.append(std::to_string(it->second->value));
-        s.append("\n");
+    if (dbStream.fail()) {
+        LOG(ERROR) << "Failed, seekp to offset " << offset << " failed due to i/0 error " << config->getDataFile();
     }
 
-    writeToFile(config->getDataFile().c_str(), s.c_str());
-    //LOG(INFO) << "Data Written: " << s;
+    if (dbStream.bad()) {
+        LOG(ERROR) << "Failed, seekp to offset " << offset << " failed due to Either an insertion on the stream failed, or some other error happened " << config->getDataFile();
+    }
+    
+    for (int i=0; i < len; i++) {
+        dbStream.put(*(data+i));
+    }
+    
+    // due to null terminated characters in the middle, write does not work here
+    //dbStream.write(data, len);
+
+    if (dbStream.fail()) {
+        LOG(ERROR) << "Failed, writing to database failed due to i/0 error " << config->getDataFile();
+    }
+
+    if (dbStream.bad()) {
+        LOG(ERROR) << "Failed, writing to database failed due to Either an insertion on the stream failed, or some other error happened " << config->getDataFile();
+    }
+}
+
+// Save data to database
+void saveToDatabase(bool force) {
+    static uBigInt LAST_END_POS = MAX_SEQ_LENGTH;
+    
+    if (!dbStream.is_open()) {
+        dbStream.open(config->getDataFile().c_str(), fstream::in | fstream::out | fstream::binary);
+    }
+    
+    if (!dbStream.is_open() || !dbStream.good()) {
+        LOG(ERROR) << "Unable to open database file for write. Good: " << dbStream.good() << ", Fail: " << dbStream.fail() << ", Bad: " << dbStream.bad() << ", Eof: " << dbStream.eof() << ", " << config->getDataFile().c_str();
+        dbStream.close();
+        return;
+    }
+    
+    bool totalUpdated = false, dirty = false;
+    
+    for (auto it = counters.cbegin(); it != counters.cend(); it++) {
+        if (force || it->second->dirty) {
+            it->second->dirty = false;
+            dirty = true;
+            
+            // update total
+            if (!totalUpdated) {
+                totalUpdated = true;
+                
+                string ts = std::to_string(counters.size());
+                char t[MAX_SEQ_LENGTH];
+                
+                int i = 0;
+                for (auto c = ts.cbegin(); c != ts.cend(); ++c) {
+                    t[i++] = *c;
+                }
+                
+                _writeDBSteram(t, 0, MAX_SEQ_LENGTH);
+            }
+            
+            if (!it->second->offset) {
+                // add at the end of the file
+                it->second->offset = LAST_END_POS;
+                
+                // This is okay
+                LAST_END_POS += MAX_KEY_LENGTH + MAX_SEQ_LENGTH;
+            }
+            
+            string val = std::to_string(it->second->value);
+            string key = it->first;
+            
+            char s[MAX_KEY_LENGTH + MAX_SEQ_LENGTH];
+            memset(s, 0, sizeof(s));
+            
+            int i = 0;
+            for (auto c = key.cbegin(); c != key.cend(); ++c) {
+                s[i++] = *c;
+            }
+            
+            i = MAX_KEY_LENGTH;
+            for (auto c = val.cbegin(); c != val.cend(); ++c) {
+                s[i++] = *c;
+            }
+            
+            //cout << "written bytes " << ", Key: " << it->first << ", value: " << val << "\n";
+            
+            _writeDBSteram(s, it->second->offset, sizeof(s));
+        }
+    }
+    
+    
+    if (dirty) {
+        _syncDbStream();
+    }
+    
 }
 
 // read data from database
 int readFromDatabase() {
+
     if (!fileExists(config->getDataFile())) {
-        LOG(INFO) << "data file is empty " << config->getDataFile() << "\n";
+        LOG(INFO) << "data file does not exist! " << config->getDataFile() << "\n";
+        //return 0;
+        writeToFile(config->getDataFile().c_str(), "");
+        //truncate(config->getDataFile().c_str(), 1024 * 1024);
+    }
+
+    if (!dbStream.is_open()) {
+        dbStream.open(config->getDataFile().c_str(), fstream::in | fstream::binary);
+    }
+    
+    if (!dbStream.is_open() || !dbStream.good()) {
+        LOG(ERROR) << "Unable to open database file for read. Good: " << dbStream.good() << ", Fail: " << dbStream.fail() << ", Bad: " << dbStream.bad() << ", Eof: " << dbStream.eof() << ", " << config->getDataFile().c_str();
+        dbStream.close();
         return 0;
     }
-
+    
     counters.clear();
-
-    string data;
-    if (!readFromFile(config->getDataFile().c_str(), data)) {
-        std::cerr << "Unable to read from data file " << config->getDataFile() << "\n";
-        LOG(ERROR) << "Unable to read from data file " << config->getDataFile() << "\n";
-        exit(EXIT_FAILURE);
+    
+    char seq[MAX_SEQ_LENGTH], key[MAX_KEY_LENGTH];
+    
+    // read total number
+    dbStream.seekg(0, fstream::beg);
+    dbStream.read(seq, MAX_SEQ_LENGTH);
+    
+    if (dbStream.fail()) {
+        LOG(ERROR) << "Logical error on i/o operation, while reading total count from file " << config->getDataFile();
     }
-
-    uBigInt len = data.length();
-    uBigInt line = 0;
-
-    string key, val;
-    bool flip = false;
-
-    for (uBigInt i = 0; i < len; i++) {
-        switch (data[i]) {
-            case ':':
-                flip = true;
-                break;
-
-            case '\n':
-                if (line == 0) {
-                    // number of elements
-                    //toHugeInt num = toHugeInt(key);
-                } else {
-                    counters[key] = new Sequence(toHugeInt(val));
-                }
-
-                key.clear();
-                val.clear();
-                flip = false;
-                line++;
-                break;
-
-            default:
-                if (flip) {
-                    val.append(1, data[i]);
-                } else {
-                    key.append(1, data[i]);
-                }
-                break;
+    
+    uBigInt offset = MAX_SEQ_LENGTH;
+    while (!dbStream.eof()) {
+    
+        //dbStream.seekg(offset, fstream::beg);
+        dbStream.read(key, MAX_KEY_LENGTH);
+        
+        if (dbStream.fail()) {
+            LOG(ERROR) << "Logical error on i/o operation, while reading data sequence KEY from file, offset: " << offset << ", " << config->getDataFile();
+        }
+        
+        offset += MAX_KEY_LENGTH;
+        
+        //dbStream.seekg(offset, fstream::beg);
+        dbStream.read(seq, MAX_SEQ_LENGTH);
+        
+        offset += MAX_SEQ_LENGTH;
+        
+        if (dbStream.fail()) {
+            LOG(ERROR) << "Logical error on i/o operation, while reading data sequence VALUE from file, offset: " << offset << ", " << config->getDataFile();
+        }
+        
+        if (strlen(key)) {
+            counters[key] = new Sequence(toHugeInt(seq));
+            counters[key]->dirty = false;
+            counters[key]->offset = offset;
+        } else {
+            LOG(ERROR) << "empty KEY and VALUE found on read " << config->getDataFile();
         }
     }
-
-    LOG(INFO) << "Data Read: " << (line-1) << " records read";
+    
+    dbStream.close();
+    return 1;
 }
 
 
@@ -241,7 +355,7 @@ void Sequencer::saveToDiskTask() {
     while (1) {
         //LOG(INFO) << "saveToDiskTask ... ";
 
-        saveToDatabase();
+        saveToDatabase(false);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }

@@ -13,10 +13,14 @@ string Sequence::getId() const {
 
 Sequence::Sequence() {
     value = SEQUENCE_START_FROM;
+    dirty = true;
+    offset = 0;
 }
 
 Sequence::Sequence(uHugeInt val) {
     value = val;
+    dirty = true;
+    offset = 0;
 }
 
 Sequence::~Sequence() {
@@ -31,6 +35,8 @@ void addNewSequence(const string &key, uHugeInt val) {
     std::lock_guard<Mutex> lk(newSeqMtx);
     
     counters[key] = new Sequence(val);
+    
+    cout << "Created new, size now: " << counters.size() << "\n";
 }
 
 // UUIDMtx
