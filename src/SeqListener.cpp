@@ -74,7 +74,10 @@ void SeqListener::listenThread() {
     int descriptor = 0;
 
     while (descriptor = ::accept(conn, (struct sockaddr*)&clientAddress, &inAddrLen)) {
-
+        if (descriptor <= 0) {
+            continue;
+        }
+    
         if (runningClients > config->maxConnections) {
             char clientIP[50];
             inet_ntop(PF_INET, (struct in_addr*)&(clientAddress.sin_addr.s_addr), clientIP, sizeof(clientIP)-1);

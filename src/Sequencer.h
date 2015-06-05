@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <climits>
 #include <iostream>
+#include <fstream>
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -39,7 +40,9 @@
 #include <signal.h>
 #include <vector>
 #include <uuid/uuid.h>
+
 #define ELPP_DEFAULT_LOG_FILE "/tmp/sequencer-init.log"
+#define ELPP_DEBUG_ERRORS
 #include "easylogging++.h"
 
 typedef el::Level LogLevel;
@@ -53,6 +56,8 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 using std::atomic;
+using std::ios;
+using std::fstream;
 using namespace std::chrono;
 using std::chrono::system_clock;
 using namespace std::this_thread;
@@ -72,6 +77,8 @@ std::atomic<int> runningClients;
 
 // Note: update this in INVALID_CMD_KEY_JSON as well
 #define MAX_KEY_LENGTH 64
+// 128 bit integers
+#define MAX_SEQ_LENGTH 40
 
 #define INVALID_CMD_JSON "{\"success\": 0, \"code\": 100, \"error\": \"Invalid request.\"}\n"
 
@@ -146,6 +153,8 @@ extern Mutex UUIDMtx;
 Mutex UUIDMtx;
 
 typedef std::atomic<uHugeInt> uHugeIntAtomic;
+typedef std::atomic<bool> BoolAtomic;
+typedef std::atomic<uBigInt> BigAtomic;
 
 
 // Check old prcoess is running or not
@@ -276,6 +285,10 @@ protected:
 
 public:
     uHugeIntAtomic value;
+    
+    BoolAtomic dirty;
+    
+    uBigInt offset;
 
     // Constructors
     Sequence();
@@ -293,10 +306,16 @@ public:
 extern unordered_map<string, Sequence*> counters;
 unordered_map<string, Sequence*> counters;
 
+extern fstream dbStream;
+fstream dbStream;
+
+
+extern uBigInt dbStreamPos;
+uBigInt dbStreamPos = 0;
 
 
 // Save data to database
-void saveToDatabase();
+void saveToDatabase(bool);
 
 // read data from database
 int readFromDatabase();
